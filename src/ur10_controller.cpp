@@ -2,11 +2,11 @@
 
 UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   // robot_move_group_("manipulator");
-  robot_move_group_.setPlanningTime(10);
-  robot_move_group_.setNumPlanningAttempts(10);
+  robot_move_group_.setPlanningTime(20);
+  robot_move_group_.setNumPlanningAttempts(20);
   robot_move_group_.setPlannerId("RRTConnectkConfigDefault");
   home_position_ = {0.0, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
-  offset_ = 0.02;
+  offset_ = 0.025;
 
   robot_tf_listener_.waitForTransform("linear_arm_actuator", "ee_link",
                                       ros::Time(0), ros::Duration(10));
@@ -23,7 +23,7 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   end_position_ = home_position_;
   end_position_[0] = -2.2;
   end_position_[1] = 4.5;
-  // end_position_[2] = -1.2;
+  end_position_[2] = -1.2;
 
   agv_tf_listener_.waitForTransform("world", "agv2_load_point_frame",
                                     ros::Time(0), ros::Duration(10));
@@ -31,10 +31,11 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
                                    ros::Time(0), agv_tf_transform_);
   agv_position_.position.x = agv_tf_transform_.getOrigin().x();
   agv_position_.position.y = agv_tf_transform_.getOrigin().y();
-  agv_position_.position.z = agv_tf_transform_.getOrigin().z() + offset_;
+  agv_position_.position.z = agv_tf_transform_.getOrigin().z() + 2 * offset_;
 
   gripper_client_ = ur10_nh_.serviceClient<osrf_gear::VacuumGripperControl>(
       "/ariac/gripper/control");
+  counter_ = 0;
 }
 
 UR10Controller::~UR10Controller() {}
@@ -78,7 +79,10 @@ void UR10Controller::sendRobotHome() {
 
 void UR10Controller::gripperToggle(const bool& state) {
   gripper_service_.request.enable = state;
-  if (gripper_client_.call(gripper_service_)) {
+  gripper_client_.call(gripper_service_);
+  ros::Duration(1.0).sleep();
+  // if (gripper_client_.call(gripper_service_)) {
+  if (gripper_service_.response.success) {
     ROS_INFO_STREAM("Gripper activated!");
   } else {
     ROS_WARN_STREAM("Gripper activation failed!");
@@ -86,7 +90,9 @@ void UR10Controller::gripperToggle(const bool& state) {
 }
 
 void UR10Controller::dropPart() {
-  ROS_WARN_STREAM("Dropping the part...");
+  counter_++;
+
+  ROS_WARN_STREAM("Dropping the part number: " << counter_);
 
   ROS_INFO_STREAM("Moving to end of conveyor...");
   robot_move_group_.setJointValueTarget(end_position_);
@@ -94,6 +100,7 @@ void UR10Controller::dropPart() {
   ros::Duration(2.0).sleep();
 
   ROS_INFO_STREAM("Dropping on AGV...");
+  // agv_position_.position.x -= (0.01 * counter_);
   this->setTarget(agv_position_);
   this->execute();
   ros::Duration(2.0).sleep();
@@ -111,7 +118,7 @@ void UR10Controller::dropPart() {
 }
 
 void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
-  ROS_INFO_STREAM("Picking the part...");
+  ROS_WARN_STREAM("Picking the part...");
 
   ROS_INFO_STREAM("Moving to part...");
   part_pose.position.z = part_pose.position.z + offset_;

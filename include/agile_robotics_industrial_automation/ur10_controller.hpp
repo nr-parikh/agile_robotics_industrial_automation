@@ -3,7 +3,6 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
 #include <moveit/move_group_interface/move_group_interface.h>
@@ -45,4 +44,5 @@ class UR10Controller {
   std::vector<double> end_position_;
   double offset_;
   geometry_msgs::Pose agv_position_;
+  int counter_;
 };

@@ -2,45 +2,80 @@
 #include <tf/tf.h>
 #include "agile_robotics_industrial_automation/ur10_controller.hpp"
 
+void start_competition(ros::NodeHandle &node) {
+  ros::ServiceClient start_client =
+      node.serviceClient<std_srvs::Trigger>("/ariac/start_competition c");
+
+  if (!start_client.exists()) {
+    ROS_INFO("Waiting for the competition to be ready...");
+    start_client.waitForExistence();
+    ROS_INFO("Competition is now ready.");
+  }
+  ROS_INFO("Requesting competition start...");
+  std_srvs::Trigger srv;
+  start_client.call(srv);
+  if (!srv.response.success) {
+    ROS_ERROR_STREAM(
+        "Failed to start the competition: " << srv.response.message);
+  } else {
+    ROS_INFO("Competition started!");
+  }
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "ariac_example_node");
+
+  // std::vector<std::string> order =
+  // {"logical_camera_1_piston_rod_part_2_frame",
+  //                                   "logical_camera_1_piston_rod_part_3_frame",
+  //                                   "logical_camera_2_gear_part_1_frame",
+  //                                   "logical_camera_2_gear_part_2_frame",
+  //                                   "logical_camera_2_gear_part_3_frame"};
 
   ros::NodeHandle node;
 
   UR10Controller ur10;
 
   geometry_msgs::Pose target;
+  target.position.x = -0.500000;
+  target.position.y = -0.735000;
+  target.position.z = 0.724951;
+  double part_diff = 0.133;
+  double bin_diff = 0.765;
 
-  // auto quaternion = tf::createQuaternionFromRPY(-0.12,0.059,1.64);
+  for (auto i = 0; i < 5; i++) {
+    ur10.pickPart(target);
+    ROS_INFO("Part picked!!!!!");
+    ros::Duration(1.0).sleep();
+    ur10.dropPart();
+    ROS_INFO("Part dropped!!!");
 
-  // target.orientation.x = quaternion[0];
-  // target.orientation.y = quaternion[1];
-  // target.orientation.z = quaternion[2];
-  // target.orientation.w = quaternion[3];
+    if (i == 2) {
+      target.position.y += (bin_diff - (2 * part_diff));
+    } else {
+      target.position.y += part_diff;
+    }
+    target.position.z -= 0.025;
+  }
 
-  // we set positions for our pose
-  target.position.x = -0.5;
-  target.position.y = -0.735;
-  target.position.z = 0.724;
-  // ur10.setTarget(target);
-  // ROS_INFO("Moving");
-  // ur10.execute();
+  // tf::StampedTransform transform;
+  // tf::TransformListener listener;
 
-  ur10.pickPart(target);
-  ROS_INFO("Part picked!!!!!");
-  ros::Duration(1.0).sleep();
-  ur10.dropPart();
-  ROS_INFO("Part dropped!!!");
+  // for (auto i : order) {
+  //   listener.waitForTransform("world", i, ros::Time(0), ros::Duration(10));
+  //   listener.lookupTransform("/world", i, ros::Time(0), transform);
 
-  // UR10_JointControl ur10(node);
+  //   target.position.x = transform.getOrigin().x();
+  //   target.position.y = transform.getOrigin().y();
+  //   target.position.z = transform.getOrigin().z();
+  //   // target.orientation = transform.getRotation();
 
-  // ur10.gripperAction(gripper::OPEN);
-
-  // ur10.jointPosePublisher({1.85, 0.35, -0.38, 2.76, 3.67, -1.51, 0.00});
-
-  // ur10.gripperAction(gripper::CLOSE);
-
-  // ros::spin();
+  //   ur10.pickPart(target);
+  //   ROS_INFO("Part picked!!!!!");
+  //   ros::Duration(1.0).sleep();
+  //   ur10.dropPart();
+  //   ROS_INFO("Part dropped!!!");
+  // }
 
   return 0;
 }
