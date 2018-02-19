@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(agile_robotics_industrial_automation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -14,6 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   trajectory_msgs
+  moveit_ros_planning_interface
+  tf
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -105,12 +108,13 @@ find_package(catkin REQUIRED COMPONENTS
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
- # INCLUDE_DIRS include
-#  LIBRARIES agile_robotics_industrial_automation
- CATKIN_DEPENDS osrf_gear rocpp sensor_msgs std_msgs std_srvs trajectory_msgs
-#  DEPENDS system_lib
-)
+catkin_package()
+# catkin_package(
+#  INCLUDE_DIRS include
+# #  LIBRARIES agile_robotics_industrial_automation
+#  CATKIN_DEPENDS osrf_gear rocpp sensor_msgs std_msgs std_srvs trajectory_msgs tf moveit_ros_planning_interface geometry_msgs
+# #  DEPENDS system_lib
+# )
 
 ###########
 ## Build ##
@@ -119,7 +123,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -136,7 +140,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(demo_node src/trial_example.cpp)
+add_executable(demo_node src/qual1.cpp src/ur10_controller.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,7 +167,7 @@ target_link_libraries(demo_node
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/trial_example.py
+  scripts/qual1.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

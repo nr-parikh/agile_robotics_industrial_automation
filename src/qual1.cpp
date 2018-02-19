@@ -22,9 +22,16 @@ int main(int argc, char **argv) {
   target.position.x = -0.5;
   target.position.y = -0.735;
   target.position.z = 0.724;
-  ur10.setTarget(target);
-  ROS_INFO("Moving");
-  ur10.execute();
+  // ur10.setTarget(target);
+  // ROS_INFO("Moving");
+  // ur10.execute();
+
+  ur10.pickPart(target);
+  ROS_INFO("Part picked!!!!!");
+  ros::Duration(1.0).sleep();
+  ur10.dropPart();
+  ROS_INFO("Part dropped!!!");
+
   // UR10_JointControl ur10(node);
 
   // ur10.gripperAction(gripper::OPEN);
