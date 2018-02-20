@@ -55,18 +55,27 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
   <build_depend>trajectory_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>moveit_ros_planning_interface</build_depend>
+  <build_depend>geometry_msgs</build_depend>
   <build_export_depend>osrf_gear</build_export_depend>
   <build_export_depend>rocpp</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>std_srvs</build_export_depend>
   <build_export_depend>trajectory_msgs</build_export_depend>
+  <build_export_depend>tf</build_export_depend>
+  <build_export_depend>moveit_ros_planning_interface</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
   <exec_depend>osrf_gear</exec_depend>
   <exec_depend>rocpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>std_srvs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>moveit_ros_planning_interface</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
