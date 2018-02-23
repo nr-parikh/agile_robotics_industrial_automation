@@ -55,7 +55,7 @@ public:
   /// Called when a new message is received.
   void current_score_callback(const std_msgs::Float32::ConstPtr & msg) {
     if (msg->data != current_score_)
-    {
+    {       
       ROS_INFO_STREAM("Score: " << msg->data);
     }
     current_score_ = msg->data;
@@ -82,7 +82,7 @@ public:
     const sensor_msgs::JointState::ConstPtr & joint_state_msg)
   {
     ROS_INFO_STREAM_THROTTLE(10,
-      "Joint States (throttled to 0.1 Hz):\n" << *joint_state_msg);
+      "Joint States (throttled to 0.1 Hz):\n" << *joint_state_msg);//star is for de refrencing
     // ROS_INFO_STREAM("Joint States:\n" << *joint_state_msg);
     current_joint_states_ = *joint_state_msg;
     if (!has_been_zeroed_) {
@@ -203,9 +203,7 @@ int main(int argc, char ** argv) {
     &MyCompetitionClass::break_beam_callback, &comp_class);
 
   // Subscribe to the '/ariac/logical_camera_1' topic.
-  ros::Subscriber logical_camera_subscriber = node.subscribe(
-    "/ariac/logical_camera_1", 10,
-    &MyCompetitionClass::logical_camera_callback, &comp_class);
+  `
 
   // Subscribe to the '/ariac/laser_profiler_1' topic.
   ros::Subscriber laser_profiler_subscriber = node.subscribe(

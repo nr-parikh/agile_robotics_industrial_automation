@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     } else {
       target.position.y += part_diff;
     }
-    target.position.z -= 0.025;
+    target.position.z -= 0.024;
   }
 
   // tf::StampedTransform transform;

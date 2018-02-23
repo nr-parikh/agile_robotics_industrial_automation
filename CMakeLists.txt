@@ -141,6 +141,7 @@ include
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(demo_node src/qual1.cpp src/ur10_controller.cpp)
+add_executable(sensor  src/sensor.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -151,9 +152,12 @@ add_executable(demo_node src/qual1.cpp src/ur10_controller.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(demo_node ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(sensor ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(demo_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(sensor
   ${catkin_LIBRARIES}
 )
 
@@ -172,7 +176,7 @@ install(PROGRAMS
 )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS demo_node
+install(TARGETS demo_node sensor
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
