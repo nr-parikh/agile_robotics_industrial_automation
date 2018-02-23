@@ -121,7 +121,7 @@ void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_WARN_STREAM("Picking the part...");
 
   ROS_INFO_STREAM("Moving to part...");
-  part_pose.position.z = part_pose.position.z + offset_;
+  // part_pose.position.z = part_pose.position.z + offset_;
   this->setTarget(part_pose);
   this->execute();
   ros::Duration(2.0).sleep();
