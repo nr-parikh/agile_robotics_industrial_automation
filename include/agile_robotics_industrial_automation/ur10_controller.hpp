@@ -41,8 +41,8 @@ class UR10Controller {
   bool plan_success_;
   std::vector<double> home_position_;
   geometry_msgs::Quaternion fixed_orientation_;
+  geometry_msgs::Pose agv_position_;
   std::vector<double> end_position_;
   double offset_;
-  geometry_msgs::Pose agv_position_;
   int counter_;
 };

@@ -1,10 +1,10 @@
 #include <std_srvs/Trigger.h>
 #include <tf/tf.h>
-#include "agile_robotics_industrial_automation/ur10_controller.hpp"
+#include "agile_robotics_industrial_automation/order_manager.hpp"
 
 void start_competition(ros::NodeHandle &node) {
   ros::ServiceClient start_client =
-      node.serviceClient<std_srvs::Trigger>("/ariac/start_competition c");
+      node.serviceClient<std_srvs::Trigger>("/ariac/start_competition");
 
   if (!start_client.exists()) {
     ROS_INFO("Waiting for the competition to be ready...");
@@ -25,38 +25,31 @@ void start_competition(ros::NodeHandle &node) {
 int main(int argc, char **argv) {
   ros::init(argc, argv, "ariac_example_node");
 
-  // std::vector<std::string> order =
-  // {"logical_camera_1_piston_rod_part_2_frame",
-  //                                   "logical_camera_1_piston_rod_part_3_frame",
-  //                                   "logical_camera_2_gear_part_1_frame",
-  //                                   "logical_camera_2_gear_part_2_frame",
-  //                                   "logical_camera_2_gear_part_3_frame"};
-
   ros::NodeHandle node;
 
-  UR10Controller ur10;
+  // UR10Controller ur10;
 
-  geometry_msgs::Pose target;
-  target.position.x = -0.500000;
-  target.position.y = -0.735000;
-  target.position.z = 0.724951;
-  double part_diff = 0.133;
-  double bin_diff = 0.765;
+  // geometry_msgs::Pose target;
+  // target.position.x = -0.500000;
+  // target.position.y = -0.735000;
+  // target.position.z = 0.724951;
+  // double part_diff = 0.133;
+  // double bin_diff = 0.765;
 
-  for (auto i = 0; i < 5; i++) {
-    ur10.pickPart(target);
-    ROS_INFO("Part picked!!!!!");
-    ros::Duration(1.0).sleep();
-    ur10.dropPart();
-    ROS_INFO("Part dropped!!!");
+  // for (auto i = 0; i < 5; i++) {
+  //   ur10.pickPart(target);
+  //   ROS_INFO("Part picked!!!!!");
+  //   ros::Duration(1.0).sleep();
+  //   ur10.dropPart();
+  //   ROS_INFO("Part dropped!!!");
 
-    if (i == 2) {
-      target.position.y += (bin_diff - (2 * part_diff));
-    } else {
-      target.position.y += part_diff;
-    }
-    target.position.z -= 0.025;
-  }
+  //   if (i == 2) {
+  //     target.position.y += (bin_diff - (2 * part_diff));
+  //   } else {
+  //     target.position.y += part_diff;
+  //   }
+  //   target.position.z -= 0.025;
+  // }
 
   // tf::StampedTransform transform;
   // tf::TransformListener listener;
@@ -76,6 +69,14 @@ int main(int argc, char **argv) {
   //   ur10.dropPart();
   //   ROS_INFO("Part dropped!!!");
   // }
+
+  OrderManager manager;
+
+  start_competition(node);
+
+  ros::Duration(2.0).sleep();
+
+  manager.executeOrder();
 
   return 0;
 }

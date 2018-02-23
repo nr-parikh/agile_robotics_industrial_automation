@@ -140,7 +140,7 @@ include
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(demo_node src/qual1.cpp src/ur10_controller.cpp)
+add_executable(demo_node src/qual1.cpp src/ur10_controller.cpp src/sensor.cpp src/order_manager.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
