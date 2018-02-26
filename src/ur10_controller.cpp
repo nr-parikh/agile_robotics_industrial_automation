@@ -90,16 +90,18 @@ void UR10Controller::gripperToggle(const bool& state) {
   }
 }
 
-void UR10Controller::dropPart() {
+bool UR10Controller::dropPart() {
   counter_++;
-
+  gripper_state = false;
+  pick = false;
+  drop = true;
   ROS_WARN_STREAM("Dropping the part number: " << counter_);
 
   ROS_INFO_STREAM("Moving to end of conveyor...");
   robot_move_group_.setJointValueTarget(end_position_);
   this->execute();
   ros::Duration(2.0).sleep();
-
+  this->gripper_state_check(agv_position_);
   ROS_INFO_STREAM("Dropping on AGV...");
   // agv_position_.position.x -= (0.01 * counter_);
   this->setTarget(agv_position_);
@@ -116,6 +118,7 @@ void UR10Controller::dropPart() {
 
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
+  return drop;
 }
 void UR10Controller::gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip)
 {
@@ -131,19 +134,43 @@ void UR10Controller::gripper_callback(const osrf_gear::VacuumGripperState::Const
 }
 
 void UR10Controller::gripper_state_check(geometry_msgs::Pose pose)
-{
-  if(gripper_state == true)
+{ 
+  ros::NodeHandle gripper_nh_; 
+  ros::Subscriber gripper_subscriber_ = gripper_nh_.subscribe("/ariac/gripper/state", 10,
+                                              &UR10Controller::gripper_callback, this);
+  ros::spinOnce();
+  if (pick == true)
+  {
+    if(gripper_state == true)
     {
      ROS_INFO_STREAM("Part Attached");
     }
-  else{
+    else
+    {
     ROS_INFO_STREAM("Part Not Attached");
     pose.position.z = pose.position.z - 0.01;
     this->pickPart(pose);
+    }
   }
+
+  else
+  {
+    if(gripper_state == true)
+    {
+     ROS_INFO_STREAM("Dropping: Part Attached");
+    }
+    else
+    {
+    ROS_INFO_STREAM("Part Not Attached");
+    drop = false;
+    }
+  }
+  
 }
 
 void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
+  gripper_state = false;
+  pick = true;
   ROS_WARN_STREAM("Picking the part...");
   
   ROS_INFO_STREAM("Moving to part...");
@@ -155,12 +182,10 @@ void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_INFO_STREAM("Actuating the gripper...");
   this->gripperToggle(true);
   
-  ros::NodeHandle gripper_nh_; 
-  ros::Subscriber gripper_subscriber_ = gripper_nh_.subscribe("/ariac/gripper/state", 10,
-                                              &UR10Controller::gripper_callback, this);
-  ros::spinOnce();
+  
   //ros::Duration(1.0).sleep();
   this->gripper_state_check(part_pose);
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
+  
 }
