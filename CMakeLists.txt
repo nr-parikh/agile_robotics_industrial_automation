@@ -187,7 +187,7 @@ install(TARGETS demo_node
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(FILES
- config/team_config.yaml
+ config/team_config_1.yaml
  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
 #############

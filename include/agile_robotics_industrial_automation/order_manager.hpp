@@ -26,6 +26,7 @@ class OrderManager {
   ros::Subscriber order_subscriber_;
   Sensor camera_;
   UR10Controller robot_;
-
+  
+  std::string object;
   std::map<std::string, std::list<std::string>> order_, scanned_objects_;
 };

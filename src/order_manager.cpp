@@ -28,11 +28,12 @@ void OrderManager::executeOrder() {
     ROS_INFO_STREAM(kit.first);
     for (auto& object : kit.second) {
       part_pose = camera_.getPartPose("/world", object);
-      part_pose.position.z = part_pose.position.z + 0.025;
+      part_pose.position.z = part_pose.position.z + 0.075;
       robot_.pickPart(part_pose);
       ROS_INFO_STREAM("Part picked: " << object);
-      robot_.dropPart();
+      robot_.dropPart(object);
       ROS_INFO_STREAM("Part dropped: " << object);
+      
     }
   }
 }
