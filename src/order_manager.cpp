@@ -13,8 +13,10 @@ void OrderManager::orderCallback(const osrf_gear::Order::ConstPtr& order_msg) {
     for (auto& object : kit.objects) {
       order_[object.type].push_back(scanned_objects_[object.type].front());
       scanned_objects_[object.type].pop_front();
-      // ROS_WARN_STREAM("object.type:>>>>>>>>>>" << object.type << "typeid>>>>>>"
-      //                                          << typeid(object.type).name());
+      // ROS_WARN_STREAM("object.type:>>>>>>>>>>" << object.type <<
+      // "typeid>>>>>>"
+      //                                          <<
+      //                                          typeid(object.type).name());
     }
   }
 }
@@ -22,8 +24,8 @@ void OrderManager::orderCallback(const osrf_gear::Order::ConstPtr& order_msg) {
 std::string OrderManager::getPartType(std::string object) {
   // ROS_WARN_STREAM("<<<<<<<>>>>>>>>>>"
   //                 << object << ">>>>>>>>>>type:" << typeid(object).name());
-  std::string part = scanned_objects_[object].front();
-  scanned_objects_[object].pop_front();
+  std::string part = scanned_objects_[object].back();
+  scanned_objects_[object].pop_back();
   return part;
 }
 
@@ -48,7 +50,9 @@ void OrderManager::executeOrder() {
       ROS_INFO_STREAM("Part picked: " << object);
       success = robot_.dropPart();
       if (!success) {
+        ROS_WARN_STREAM("Part lost and cannot drop!!!");
         parts.push_front(this->getPartType(kit.first));
+        ROS_WARN_STREAM("Current part list size: " << parts.size());
       }
     }
 
