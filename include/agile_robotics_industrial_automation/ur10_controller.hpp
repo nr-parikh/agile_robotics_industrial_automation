@@ -9,6 +9,8 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include <osrf_gear/VacuumGripperControl.h>
+#include <osrf_gear/VacuumGripperState.h>
+
 
 class UR10Controller {
  public:
@@ -20,6 +22,8 @@ class UR10Controller {
   void sendRobotHome();
   void dropPart();
   void gripperToggle(const bool& state);
+  void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
+  void gripper_state_check(geometry_msgs::Pose pose);
   void pickPart(geometry_msgs::Pose& part_pose);
 
  private:
@@ -37,6 +41,7 @@ class UR10Controller {
   moveit::planning_interface::MoveGroupInterface::Plan robot_planner_;
 
   osrf_gear::VacuumGripperControl gripper_service_;
+  osrf_gear::VacuumGripperState gripper_status_;
 
   bool plan_success_;
   std::vector<double> home_position_;
@@ -45,4 +50,5 @@ class UR10Controller {
   std::vector<double> end_position_;
   double offset_;
   int counter_;
+  bool gripper_state;
 };

@@ -1,5 +1,6 @@
 #include "agile_robotics_industrial_automation/ur10_controller.hpp"
 
+
 UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   // robot_move_group_("manipulator");
   robot_move_group_.setPlanningTime(20);
@@ -116,10 +117,35 @@ void UR10Controller::dropPart() {
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
 }
+void UR10Controller::gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip)
+{
+
+  if(grip->attached == true)
+  {
+    gripper_state = true;
+  }
+    
+  else{
+    gripper_state = false;
+  }
+}
+
+void UR10Controller::gripper_state_check(geometry_msgs::Pose pose)
+{
+  if(gripper_state == true)
+    {
+     ROS_INFO_STREAM("Part Attached");
+    }
+  else{
+    ROS_INFO_STREAM("Part Not Attached");
+    pose.position.z = pose.position.z - 0.01;
+    this->pickPart(pose);
+  }
+}
 
 void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_WARN_STREAM("Picking the part...");
-
+  
   ROS_INFO_STREAM("Moving to part...");
   // part_pose.position.z = part_pose.position.z + offset_;
   this->setTarget(part_pose);
@@ -128,7 +154,13 @@ void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
 
   ROS_INFO_STREAM("Actuating the gripper...");
   this->gripperToggle(true);
-
+  
+  ros::NodeHandle gripper_nh_; 
+  ros::Subscriber gripper_subscriber_ = gripper_nh_.subscribe("/ariac/gripper/state", 10,
+                                              &UR10Controller::gripper_callback, this);
+  ros::spinOnce();
+  //ros::Duration(1.0).sleep();
+  this->gripper_state_check(part_pose);
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
 }
