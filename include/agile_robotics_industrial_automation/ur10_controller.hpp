@@ -21,7 +21,7 @@ class UR10Controller {
   void execute();
   void setTarget(const geometry_msgs::Pose& target);
   void sendRobotHome();
-  void dropPart(std::string object);
+  bool dropPart();
   void gripperToggle(const bool& state);
   void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
