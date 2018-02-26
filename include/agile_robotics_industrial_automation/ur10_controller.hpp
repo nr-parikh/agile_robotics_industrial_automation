@@ -29,6 +29,8 @@ class UR10Controller {
  private:
   ros::NodeHandle ur10_nh_;
   ros::ServiceClient gripper_client_;
+  ros::NodeHandle gripper_nh_; 
+  ros::Subscriber gripper_subscriber_;
 
   tf::TransformListener robot_tf_listener_;
   tf::StampedTransform robot_tf_transform_;

@@ -15,7 +15,7 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
                                      ros::Time(0), robot_tf_transform_);
 
   sendRobotHome();
-
+  ros::Duration(1.0).sleep();
   fixed_orientation_.x = robot_tf_transform_.getRotation().x();
   fixed_orientation_.y = robot_tf_transform_.getRotation().y();
   fixed_orientation_.z = robot_tf_transform_.getRotation().z();
@@ -100,13 +100,13 @@ bool UR10Controller::dropPart() {
   ROS_INFO_STREAM("Moving to end of conveyor...");
   robot_move_group_.setJointValueTarget(end_position_);
   this->execute();
-  ros::Duration(2.0).sleep();
+  ros::Duration(1.0).sleep();
   this->gripper_state_check(agv_position_);
   ROS_INFO_STREAM("Dropping on AGV...");
   // agv_position_.position.x -= (0.01 * counter_);
   this->setTarget(agv_position_);
   this->execute();
-  ros::Duration(2.0).sleep();
+  ros::Duration(1.0).sleep();
 
   ROS_INFO_STREAM("Actuating the gripper...");
   this->gripperToggle(false);
@@ -114,7 +114,7 @@ bool UR10Controller::dropPart() {
   ROS_INFO_STREAM("Moving to end of conveyor...");
   robot_move_group_.setJointValueTarget(end_position_);
   this->execute();
-  ros::Duration(2.0).sleep();
+  ros::Duration(1.0).sleep();
 
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
@@ -122,23 +122,16 @@ bool UR10Controller::dropPart() {
 }
 void UR10Controller::gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip)
 {
-
-  if(grip->attached == true)
-  {
-    gripper_state = true;
-  }
-    
-  else{
-    gripper_state = false;
-  }
+  gripper_state = grip->attached;
 }
 
 void UR10Controller::gripper_state_check(geometry_msgs::Pose pose)
 { 
-  ros::NodeHandle gripper_nh_; 
-  ros::Subscriber gripper_subscriber_ = gripper_nh_.subscribe("/ariac/gripper/state", 10,
+  gripper_subscriber_ = gripper_nh_.subscribe("/ariac/gripper/state", 10,
                                               &UR10Controller::gripper_callback, this);
   ros::spinOnce();
+  ros::Duration(1.0).sleep();
+
   if (pick == true)
   {
     if(gripper_state == true)
@@ -148,7 +141,7 @@ void UR10Controller::gripper_state_check(geometry_msgs::Pose pose)
     else
     {
     ROS_INFO_STREAM("Part Not Attached");
-    pose.position.z = pose.position.z - 0.01;
+    pose.position.z = pose.position.z - 0.015;
     this->pickPart(pose);
     }
   }
@@ -176,15 +169,18 @@ void UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_INFO_STREAM("Moving to part...");
   // part_pose.position.z = part_pose.position.z + offset_;
   this->setTarget(part_pose);
+
+  ros::Duration(0.5).sleep();
+
   this->execute();
+  
   ros::Duration(2.0).sleep();
 
   ROS_INFO_STREAM("Actuating the gripper...");
   this->gripperToggle(true);
-  
-  
-  //ros::Duration(1.0).sleep();
+  ros::Duration(1.0).sleep();
   this->gripper_state_check(part_pose);
+
   ROS_INFO_STREAM("Going to home...");
   this->sendRobotHome();
   
