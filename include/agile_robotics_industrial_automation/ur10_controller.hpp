@@ -4,7 +4,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
-
+#include <string>
+#include <iostream>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
@@ -20,7 +21,7 @@ class UR10Controller {
   void execute();
   void setTarget(const geometry_msgs::Pose& target);
   void sendRobotHome();
-  bool dropPart();
+  void dropPart(std::string object);
   void gripperToggle(const bool& state);
   void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
@@ -44,7 +45,8 @@ class UR10Controller {
 
   osrf_gear::VacuumGripperControl gripper_service_;
   osrf_gear::VacuumGripperState gripper_status_;
-
+  
+  std::string object;
   bool plan_success_;
   std::vector<double> home_position_;
   geometry_msgs::Quaternion fixed_orientation_;

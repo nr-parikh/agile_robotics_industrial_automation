@@ -31,18 +31,9 @@ void OrderManager::executeOrder() {
       part_pose.position.z = part_pose.position.z + 0.075;
       robot_.pickPart(part_pose);
       ROS_INFO_STREAM("Part picked: " << object);
-      bool drop = robot_.dropPart();
+      robot_.dropPart(object);
       ROS_INFO_STREAM("Part dropped: " << object);
-      if(drop == false)
-      {
-
-        // part_pose = camera_.getPartPose("/world", object);
-        // part_pose.position.z = part_pose.position.z + 0.1;
-        // robot_.pickPart(part_pose);
-        // ROS_INFO_STREAM("Part picked: " << object);
-        // drop = robot_.dropPart();
-        ROS_INFO_STREAM("Part dropped in the way: " << object);
-      }
+      
     }
   }
 }
