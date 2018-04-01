@@ -19,9 +19,9 @@ class UR10Controller {
   ~UR10Controller();
   bool planner();
   void execute();
-  void setTarget(const geometry_msgs::Pose& target);
+  void goToTarget(const geometry_msgs::Pose& target);
   void sendRobotHome();
-  bool dropPart();
+  bool dropPart(geometry_msgs::Pose& part_pose);
   void gripperToggle(const bool& state);
   void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
@@ -48,7 +48,8 @@ class UR10Controller {
   
   std::string object;
   bool plan_success_;
-  std::vector<double> home_position_;
+  std::vector<double> home_joint_pose_;
+  geometry_msgs::Pose home_cart_pose_;
   geometry_msgs::Quaternion fixed_orientation_;
   geometry_msgs::Pose agv_position_;
   std::vector<double> end_position_;

@@ -21,6 +21,7 @@
 	  void orderCallback(const osrf_gear::Order::ConstPtr& order_msg);
 	  void executeOrder();
 	  std::string getPartType(std::string object);
+	  std::map<std::string, std::list<std::string>> getOrder();
 
 	 private:
 	  ros::NodeHandle manager_nh_;

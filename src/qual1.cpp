@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 
   OrderManager manager;
 
-  start_competition(node);
+  startCompetition(node);
 
   ros::Duration(2.0).sleep();
 
