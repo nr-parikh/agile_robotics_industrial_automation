@@ -1,14 +1,3 @@
-#pragma once
-
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <ros/ros.h>
-#include <tf/transform_listener.h>
-#include <iostream>
-#include <string>
-
 // BSD 3-Clause License
 
 // Copyright (c) 2018, Neel Parikh
@@ -40,6 +29,19 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <ros/ros.h>
+#include <stdarg.h>
+#include <tf/transform_listener.h>
+#include <iostream>
+#include <string>
+#include <initializer_list>
+
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
 
@@ -49,9 +51,10 @@ class UR10Controller {
   ~UR10Controller();
   bool planner();
   void execute();
-  void goToTarget(const geometry_msgs::Pose& target);
+  void goToTarget(std::initializer_list<geometry_msgs::Pose> list);
+  void goToTarget(const geometry_msgs::Pose& pose);
   void sendRobotHome();
-  bool dropPart(geometry_msgs::Pose& part_pose);
+  bool dropPart();
   void gripperToggle(const bool& state);
   void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);

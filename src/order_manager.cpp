@@ -79,7 +79,7 @@ void OrderManager::executeOrder() {
       robot_.pickPart(part_pose);
       parts.pop_front();
       ROS_INFO_STREAM("Part picked: " << object);
-      success = robot_.dropPart(part_pose);
+      success = robot_.dropPart();
       if (!success) {
         ROS_WARN_STREAM("Part lost and cannot drop!!!");
         parts.push_front(this->getPartType(kit.first));
