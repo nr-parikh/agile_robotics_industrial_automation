@@ -30,8 +30,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <osrf_gear/AGVControl.h>
+#include <ros/ros.h>
 #include <std_srvs/Trigger.h>
 #include <tf/tf.h>
+#include <iostream>
 #include "agile_robotics_industrial_automation/order_manager.hpp"
 
 void startCompetition(ros::NodeHandle &node) {
@@ -98,35 +100,40 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "ariac_example_node");
 
   ros::NodeHandle node;
-  Sensor camera_;
-  // OrderManager manager;
-  auto targets = {"logical_camera_2_gear_part_4_frame",
-                  "logical_camera_2_gear_part_5_frame"};
+  // Sensor camera_;
+  OrderManager manager;
+  // auto targets = {"logical_camera_2_gear_part_4_frame",
+  //                 "logical_camera_2_gear_part_5_frame"};
 
-  geometry_msgs::Pose target;
-  // target.position.x = -0.5;
-  // target.position.y = -0.735;
-  // target.position.z = 0.724;
+  // geometry_msgs::Pose target;
+  // // target.position.x = -0.5;
+  // // target.position.y = -0.735;
+  // // target.position.z = 0.724;
 
-  UR10Controller robot;
-  for (auto i : targets) {
-    target = camera_.getPartPose("/world", i);
-    robot.pickPart(target);
-    robot.dropPart();
-  }
-  // startCompetition(node);
+  // UR10Controller robot;
+  // for (auto i : targets) {
+  //   target = camera_.getPartPose("/world", i);
+  //   robot.pickPart(target);
+  //   robot.dropPart();
+  // }
+  startCompetition(node);
 
-  // ros::Duration(2.0).sleep();
+  ros::Duration(2.0).sleep();
 
-  // manager.executeOrder();
+  manager.executeOrder();
+  // auto temp = manager.getOrder();
 
-  // ros::Duration(0.5).sleep();
+  // for(auto it : temp){
+  //   ROS_ERROR_STREAM(">>>>>>>" << it.first);
+  // }
+
+  ros::Duration(0.5).sleep();
 
   // submitAGV(node);
 
-  // ros::Duration(1.0).sleep();
+  ros::Duration(1.0).sleep();
 
-  // endCompetition(node);
+  endCompetition(node);
 
   // ROS_WARN_STREAM("Killing the node....");
 

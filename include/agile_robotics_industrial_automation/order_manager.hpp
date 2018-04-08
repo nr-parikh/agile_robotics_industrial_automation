@@ -52,7 +52,8 @@ class OrderManager {
   void orderCallback(const osrf_gear::Order::ConstPtr& order_msg);
   void executeOrder();
   std::string getPartType(std::string object);
-  std::map<std::string, std::list<std::string>> getOrder();
+  // std::map<std::string, std::list<std::string>> getOrder();
+  bool pickAndPlace(std::string object_type);
 
  private:
   ros::NodeHandle manager_nh_;
@@ -61,5 +62,6 @@ class OrderManager {
   UR10Controller robot_;
 
   std::string object;
-  std::map<std::string, std::list<std::string>> order_, scanned_objects_;
+  std::map<std::string, std::list<std::string>> scanned_objects_;
+  osrf_gear::Order order_;
 };

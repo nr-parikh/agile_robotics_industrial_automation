@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 	<arg name="scene" default="$(find agile_robotics_industrial_automation)/config/ariac.scene"/>
+	<!-- <node pkg = "osrf_gear" name = "gear_sim" type = "gear.py" args = "-f $(find osrf_gear)/config/qual2a.yaml $(find ariac_qual_1)/config/Config_Qual1.yaml"/> -->
 	<include file="$(find ur10_moveit_config)/launch/ur10_moveit_planning_execution.launch">
 		<arg name="sim" value="true"/>
 	</include>
 	<node name="moveit_publish_scene_from_text" pkg="moveit_ros_planning" type="moveit_publish_scene_from_text" args="$(arg scene)"/>
-	<!-- <node name="qual1_node" pkg="agile_robotics_industrial_automation" type="qual1_node"/> -->
+	<!--<node name="qual1_node" pkg="agile_robotics_industrial_automation" type="qual1_node"/> -->
 </launch>

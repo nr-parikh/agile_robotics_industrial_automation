@@ -69,7 +69,7 @@ void Sensor::scanParts(const int cam_number) {
     for (auto& msg : current_parts_1_.models) {
       std::string part = "logical_camera_1_" + msg.type + "_" +
                          std::to_string(counter_1_) + "_frame";
-      parts_list_[msg.type].push_back(part);
+      parts_list_[msg.type].emplace_back(part);
       counter_1_++;
       cam_1_ = true;
     }
@@ -77,7 +77,7 @@ void Sensor::scanParts(const int cam_number) {
     for (auto& msg : current_parts_2_.models) {
       std::string part = "logical_camera_2_" + msg.type + "_" +
                          std::to_string(counter_2_) + "_frame";
-      parts_list_[msg.type].push_back(part);
+      parts_list_[msg.type].emplace_back(part);
       counter_2_++;
       cam_2_ = true;
     }

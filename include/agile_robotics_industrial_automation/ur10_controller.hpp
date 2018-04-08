@@ -54,9 +54,9 @@ class UR10Controller {
   void goToTarget(std::initializer_list<geometry_msgs::Pose> list);
   void goToTarget(const geometry_msgs::Pose& pose);
   void sendRobotHome();
-  bool dropPart();
+  bool dropPart(geometry_msgs::Pose pose);
   void gripperToggle(const bool& state);
-  void gripper_callback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
+  void gripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
   void pickPart(geometry_msgs::Pose& part_pose);
 
@@ -88,5 +88,5 @@ class UR10Controller {
   std::vector<double> end_position_;
   double offset_;
   int counter_;
-  bool gripper_state, pick, drop;
+  bool gripper_state_, drop_flag_;
 };
