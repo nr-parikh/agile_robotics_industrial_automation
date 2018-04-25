@@ -120,8 +120,38 @@ bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose>
   ROS_INFO_STREAM("here 1>>>> " << object_type);
   std::string object_frame = this->getPartType(object_type);
   auto part_pose = camera_.getPartPose("/world",object_frame);
+  geometry_msgs::Quaternion fixed_orientation_;
   if(object_type == "pulley_part")
-    part_pose.position.z += 0.08;
+    part_pose.position.z += 0.078;
+
+  // if(object_type == "piston_rod_part"){
+
+  //   fixed_orientation_.x = 0.747672;
+  //   fixed_orientation_.y = 0.00688486;
+  //   fixed_orientation_.z = -0.662438;
+  //   fixed_orientation_.w = 0.0459918;
+  //   tf::Quaternion q, final;
+  //   tf::Matrix3x3 m;
+  //   double r_h, p_h, y_h, y_t;
+  //   q = {part_pose.orientation.x, part_pose.orientation.y, part_pose.orientation.z,
+  //        part_pose.orientation.w};
+  //   m.setRotation(q);
+  //   m.getRPY(r_h, p_h, y_t);
+  //   q = {fixed_orientation_.x, fixed_orientation_.y,fixed_orientation_.z,
+  //        fixed_orientation_.w};
+  //   m.setRotation(q);
+  //   m.getRPY(r_h, p_h, y_h);
+  //   final = tf::createQuaternionFromRPY(r_h, p_h, y_t);
+  //   part_pose.orientation.x = final.getX();
+  //   part_pose.orientation.y = final.getY();
+  //   part_pose.orientation.z = final.getZ();
+  //   part_pose.orientation.w = final.getW();
+    
+  // }
+
+  
+
+
   bool failed_pick = robot_.pickPart(part_pose);
   ROS_WARN_STREAM("failed_pick " << failed_pick);
   ros::Duration(0.5).sleep();
@@ -130,7 +160,8 @@ bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose>
       failed_pick = robot_.pickPart(part_pose); 
     }
   geometry_msgs::Pose drop_pose = object_prop.second;
-
+  if(object_prop.first == "pulley_part")
+    drop_pose.position.z += 0.078;
   geometry_msgs::PoseStamped StampedPose_in,StampedPose_out;
   if(agvnum==1){
       StampedPose_in.header.frame_id = "/agv1_load_point_frame";

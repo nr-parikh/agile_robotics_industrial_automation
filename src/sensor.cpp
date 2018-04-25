@@ -125,7 +125,7 @@ void Sensor::scanParts(const int cam_number) {
     }
   }
 
-  if (cam_1_ && cam_2_ && cam_3_ && cam_4_ ) {
+  if (cam_1_ && cam_2_ && cam_4_) {
     init_ = true;
   }
 }
