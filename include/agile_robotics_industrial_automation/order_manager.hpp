@@ -41,8 +41,7 @@
 #include <osrf_gear/Order.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
-
-#include "agile_robotics_industrial_automation/sensor_2b.hpp"
+#include "agile_robotics_industrial_automation/sensor.hpp"
 #include "agile_robotics_industrial_automation/ur10_controller.hpp"
 
 class OrderManager {
@@ -53,15 +52,17 @@ class OrderManager {
   void executeOrder();
   std::string getPartType(std::string object);
   // std::map<std::string, std::list<std::string>> getOrder();
-  bool pickAndPlace(std::string object_type);
-  bool partPresent(std::string object_type);
+  bool pickAndPlace(std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum);
+  void submitAGV(int num);
 
  private:
   ros::NodeHandle manager_nh_;
   ros::Subscriber order_subscriber_;
   Sensor camera_;
   UR10Controller robot_;
-
+  
+  tf::TransformListener part_tf_listener_;
+  std::pair<std::string,geometry_msgs::Pose> object_prop;
   std::string object;
   std::map<std::string, std::list<std::string>> scanned_objects_;
   osrf_gear::Order order_;

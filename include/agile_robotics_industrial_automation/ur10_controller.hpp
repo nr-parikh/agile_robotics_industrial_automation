@@ -44,7 +44,6 @@
 
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
-#include <osrf_gear/LogicalCameraImage.h>
 
 class UR10Controller {
  public:
@@ -54,13 +53,13 @@ class UR10Controller {
   void execute();
   void goToTarget(std::initializer_list<geometry_msgs::Pose> list);
   void goToTarget(const geometry_msgs::Pose& pose);
-  void sendRobot(const std::vector<double>& pose);
+  void sendRobot(std::vector<double> pose);
   bool dropPart(geometry_msgs::Pose pose);
   void gripperToggle(const bool& state);
   void gripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
-  void pickPart(geometry_msgs::Pose& part_pose);
   void goToConveyor();
+  bool pickPart(geometry_msgs::Pose& part_pose);
 
  private:
   ros::NodeHandle ur10_nh_;
@@ -90,7 +89,9 @@ class UR10Controller {
   geometry_msgs::Pose agv_position_;
   std::vector<double> end_position_;
   double offset_;
+  double roll_def_,pitch_def_,yaw_def_;
+  tf::Quaternion q;
   int counter_;
   bool gripper_state_, drop_flag_;
-  geometry_msgs::PoseStamped conv_pose_;  
+  geometry_msgs::PoseStamped conv_pose_;
 };

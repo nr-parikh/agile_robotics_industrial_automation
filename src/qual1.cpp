@@ -81,18 +81,18 @@ void endCompetition(ros::NodeHandle &node) {
       node.serviceClient<std_srvs::Trigger>("/ariac/end_competition");
 
   if (!start_client.exists()) {
-    ROS_INFO("Waiting for the competition to be ready...");
+    ROS_INFO("Waiting for the competition to be End...");
     start_client.waitForExistence();
-    ROS_INFO("Competition is now ready.");
+    ROS_INFO("Competition  now Ended.");
   }
-  ROS_INFO("Requesting competition start...");
+  ROS_INFO("Requesting competition End...");
   std_srvs::Trigger srv;
   start_client.call(srv);
   if (!srv.response.success) {
     ROS_ERROR_STREAM(
-        "Failed to start the competition: " << srv.response.message);
+        "Failed to End the competition: " << srv.response.message);
   } else {
-    ROS_INFO("Competition started!");
+    ROS_INFO("Competition Ended!");
   }
 }
 

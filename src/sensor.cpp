@@ -36,12 +36,22 @@ Sensor::Sensor() {
                                               &Sensor::camera1Callback, this);
   camera_2_subscriber_ = sensor_nh_.subscribe("/ariac/logical_camera_2", 10,
                                               &Sensor::camera2Callback, this);
+  camera_3_subscriber_ = sensor_nh_.subscribe("/ariac/logical_camera_3", 10,
+                                              &Sensor::camera3Callback, this);
+  camera_4_subscriber_ = sensor_nh_.subscribe("/ariac/logical_camera_4", 10,
+                                              &Sensor::camera4Callback, this);
   counter_1_ = 1;
   counter_2_ = 1;
+  counter_3_ = 1;
+  counter_4_ = 1;
+
 
   init_ = false;
   cam_1_ = false;
   cam_2_ = false;
+  cam_3_ = false;
+  cam_4_ = false;
+
 }
 
 Sensor::~Sensor() {}
@@ -63,6 +73,22 @@ void Sensor::camera2Callback(
   current_parts_2_ = *image_msg;
   this->scanParts(2);
 }
+void Sensor::camera3Callback(
+    const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
+  if (init_) {
+    return;
+  }
+  current_parts_3_ = *image_msg;
+  this->scanParts(3);
+}
+void Sensor::camera4Callback(
+    const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
+  if (init_) {
+    return;
+  }
+  current_parts_4_ = *image_msg;
+  this->scanParts(4);
+}
 
 void Sensor::scanParts(const int cam_number) {
   if (cam_number == 1) {
@@ -73,7 +99,7 @@ void Sensor::scanParts(const int cam_number) {
       counter_1_++;
       cam_1_ = true;
     }
-  } else {
+  } else if (cam_number == 2){
     for (auto& msg : current_parts_2_.models) {
       std::string part = "logical_camera_2_" + msg.type + "_" +
                          std::to_string(counter_2_) + "_frame";
@@ -81,9 +107,25 @@ void Sensor::scanParts(const int cam_number) {
       counter_2_++;
       cam_2_ = true;
     }
+  }else if (cam_number == 3){
+    for (auto& msg : current_parts_3_.models) {
+      std::string part = "logical_camera_3_" + msg.type + "_" +
+                         std::to_string(counter_3_) + "_frame";
+      parts_list_[msg.type].emplace_back(part);
+      counter_3_++;
+      cam_3_ = true;
+    }
+  }else {
+    for (auto& msg : current_parts_4_.models) {
+      std::string part = "logical_camera_4_" + msg.type + "_" +
+                         std::to_string(counter_4_) + "_frame";
+      parts_list_[msg.type].emplace_back(part);
+      counter_4_++;
+      cam_4_ = true;
+    }
   }
 
-  if (cam_1_ && cam_2_) {
+  if (cam_1_ && cam_2_ && cam_4_) {
     init_ = true;
   }
 }
