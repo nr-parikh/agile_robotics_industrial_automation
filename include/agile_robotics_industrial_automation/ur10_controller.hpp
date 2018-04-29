@@ -44,6 +44,7 @@
 
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
+#include <osrf_gear/LogicalCameraImage.h>
 
 class UR10Controller {
  public:
@@ -53,18 +54,20 @@ class UR10Controller {
   void execute();
   void goToTarget(std::initializer_list<geometry_msgs::Pose> list);
   void goToTarget(const geometry_msgs::Pose& pose);
-  void sendRobotHome();
+  void sendRobot(const std::vector<double>& pose);
   bool dropPart(geometry_msgs::Pose pose);
   void gripperToggle(const bool& state);
   void gripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
   void gripper_state_check(geometry_msgs::Pose pose);
   void pickPart(geometry_msgs::Pose& part_pose);
+  void goToConveyor();
 
  private:
   ros::NodeHandle ur10_nh_;
   ros::ServiceClient gripper_client_;
   ros::NodeHandle gripper_nh_;
   ros::Subscriber gripper_subscriber_;
+  ros::Subscriber camera_1_subscriber_;
 
   tf::TransformListener robot_tf_listener_;
   tf::StampedTransform robot_tf_transform_;
@@ -81,7 +84,7 @@ class UR10Controller {
 
   std::string object;
   bool plan_success_;
-  std::vector<double> home_joint_pose_;
+  std::vector<double> home_joint_pose_, conv_joint_pose_, temp1, temp2;
   geometry_msgs::Pose home_cart_pose_;
   geometry_msgs::Quaternion fixed_orientation_;
   geometry_msgs::Pose agv_position_;
@@ -89,4 +92,5 @@ class UR10Controller {
   double offset_;
   int counter_;
   bool gripper_state_, drop_flag_;
+  geometry_msgs::PoseStamped conv_pose_;  
 };

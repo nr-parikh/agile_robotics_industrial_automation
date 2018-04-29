@@ -42,7 +42,7 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 
-#include "agile_robotics_industrial_automation/sensor.hpp"
+#include "agile_robotics_industrial_automation/sensor_2b.hpp"
 #include "agile_robotics_industrial_automation/ur10_controller.hpp"
 
 class OrderManager {
@@ -54,6 +54,7 @@ class OrderManager {
   std::string getPartType(std::string object);
   // std::map<std::string, std::list<std::string>> getOrder();
   bool pickAndPlace(std::string object_type);
+  bool partPresent(std::string object_type);
 
  private:
   ros::NodeHandle manager_nh_;

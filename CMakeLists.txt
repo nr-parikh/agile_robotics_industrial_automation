@@ -28,11 +28,18 @@ include
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor.cpp src/order_manager.cpp)
+# add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor.cpp src/order_manager.cpp)
+# add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor_2b.cpp src/order_manager.cpp)
+add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor_2b.cpp src/order_manager_2b.cpp)
+add_executable(pose_node src/pose_broadcaster.cpp src/sensor_2b.cpp)
 
 add_dependencies(qual1_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(pose_node ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(qual1_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(pose_node
   ${catkin_LIBRARIES}
 )
 

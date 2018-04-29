@@ -35,12 +35,16 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   robot_move_group_.setPlanningTime(100);
   robot_move_group_.setNumPlanningAttempts(10);
   robot_move_group_.setPlannerId("RRTConnectkConfigDefault");
-  robot_move_group_.setMaxVelocityScalingFactor(0.9);
-  robot_move_group_.setMaxAccelerationScalingFactor(0.9);
+  // robot_move_group_.setMaxVelocityScalingFactor(0.9);
+  // robot_move_group_.setMaxAccelerationScalingFactor(0.9);
   // robot_move_group_.setEndEffector("moveit_ee");
   robot_move_group_.allowReplanning(true);
   home_joint_pose_ = {0.0, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
+  conv_joint_pose_ = {0.0, 1.1, -1.1, 1.9, 3.9, 4.7, 0};
   offset_ = 0.025;
+
+  temp1 = {1.23, 0.6, -0.8, 1.8, 3.9, 4.7, 0};
+  temp2 = {1.21, 1.30, -0.50, 0.43, 4.0, -1.57, 0.51};
 
   gripper_subscriber_ = gripper_nh_.subscribe(
       "/ariac/gripper/state", 10, &UR10Controller::gripperCallback, this);
@@ -50,7 +54,7 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   robot_tf_listener_.lookupTransform("/linear_arm_actuator", "/ee_link",
                                      ros::Time(0), robot_tf_transform_);
 
-  sendRobotHome();
+  sendRobot(home_joint_pose_);
 
   fixed_orientation_.x = robot_tf_transform_.getRotation().x();
   fixed_orientation_.y = robot_tf_transform_.getRotation().y();
@@ -167,9 +171,9 @@ void UR10Controller::goToTarget(
   }
 }
 
-void UR10Controller::sendRobotHome() {
+void UR10Controller::sendRobot(const std::vector<double>& pose) {
   // ros::Duration(2.0).sleep();
-  robot_move_group_.setJointValueTarget(home_joint_pose_);
+  robot_move_group_.setJointValueTarget(pose);
   // this->execute();
   ros::AsyncSpinner spinner(4);
   spinner.start();
@@ -191,6 +195,27 @@ void UR10Controller::gripperToggle(const bool& state) {
   } else {
     ROS_WARN_STREAM("Gripper activation failed!");
   }
+}
+
+void UR10Controller::goToConveyor() {
+  this->sendRobot(conv_joint_pose_);
+  // robot_move_group_.jointPosePublisher(temp1);
+  geometry_msgs::Pose temp;
+  temp.position.x = 1.230612;
+  temp.position.y = 1.828500;
+  temp.position.z = 0.951075;
+  // temp.orientation = home_cart_pose_.orientation;
+  auto temp2 = temp;
+  temp2.position.z += 0.015;
+
+  // this->goToTarget({temp2, temp});
+  this->goToTarget(temp);
+  while (!gripper_state_) {
+    ros::spinOnce();
+    this->gripperToggle(true);
+  }
+  this->sendRobot(conv_joint_pose_);
+  this->sendRobot(home_joint_pose_);
 }
 
 // bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
@@ -257,7 +282,7 @@ bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
   ros::spinOnce();
   ROS_INFO_STREAM("Dropping on AGV...");
 
-  if (gripper_state_){
+  if (gripper_state_) {
     auto temp_pose = part_pose;
     temp_pose.position.z += 0.5;
     this->goToTarget({temp_pose, part_pose});
