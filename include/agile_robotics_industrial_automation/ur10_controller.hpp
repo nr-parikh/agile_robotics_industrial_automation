@@ -60,6 +60,7 @@ class UR10Controller {
   void gripper_state_check(geometry_msgs::Pose pose);
   void goToConveyor();
   bool pickPart(geometry_msgs::Pose& part_pose);
+  bool flipPart(geometry_msgs::Pose& part_pose);
 
  private:
   ros::NodeHandle ur10_nh_;

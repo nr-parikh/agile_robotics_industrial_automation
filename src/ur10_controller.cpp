@@ -60,10 +60,9 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   fixed_orientation_.y = robot_tf_transform_.getRotation().y();
   fixed_orientation_.z = robot_tf_transform_.getRotation().z();
   fixed_orientation_.w = robot_tf_transform_.getRotation().w();
-  
+
   // tf::quaternionMsgToTF(fixed_orientation_,q);
   // tf::Matrix3x3(q).getRPY(roll_def_,pitch_def_,yaw_def_);
-
 
   end_position_ = home_joint_pose_;
   end_position_[0] = -2.2;
@@ -113,17 +112,6 @@ bool UR10Controller::planner() {
   return plan_success_;
 }
 
-// void UR10Controller::execute() {
-//   ros::AsyncSpinner spinner(4);
-//   spinner.start();
-//   // ros::Duration(1.0).sleep();
-//   // robot_move_group_.move();
-//   // robot_move_group_.setMaxVelocityScalingFactor(0.5);
-//   // robot_move_group_.setMaxAccelerationScalingFactor(0.5);
-//   robot_move_group_.execute(robot_planner_);
-//   // ros::Duration(2.0).sleep();
-// }
-
 void UR10Controller::execute() {
   ros::AsyncSpinner spinner(4);
   spinner.start();
@@ -155,15 +143,13 @@ void UR10Controller::goToTarget(
 
   std::vector<geometry_msgs::Pose> waypoints;
   for (auto i : list) {
-
     tf::Quaternion q, final;
     tf::Matrix3x3 m;
     double r_h, p_h, y_h, y_t;
-    q = {i.orientation.x, i.orientation.y, i.orientation.z,
-         i.orientation.w};
+    q = {i.orientation.x, i.orientation.y, i.orientation.z, i.orientation.w};
     m.setRotation(q);
     m.getRPY(r_h, p_h, y_t);
-    q = {fixed_orientation_.x, fixed_orientation_.y,fixed_orientation_.z,
+    q = {fixed_orientation_.x, fixed_orientation_.y, fixed_orientation_.z,
          fixed_orientation_.w};
     m.setRotation(q);
     m.getRPY(r_h, p_h, y_h);
@@ -195,12 +181,11 @@ void UR10Controller::goToTarget(
     ROS_ERROR_STREAM("Safe Trajectory not found!");
     home_joint_pose_ = {0.0, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
     sendRobot(home_joint_pose_);
-    auto value =
-      robot_move_group_.computeCartesianPath(waypoints, 0.001, 0.0, traj, true);
+    auto value = robot_move_group_.computeCartesianPath(waypoints, 0.001, 0.0,
+                                                        traj, true);
     robot_planner_.trajectory_ = traj;
     robot_move_group_.execute(robot_planner_);
     ros::Duration(2.0).sleep();
-
   }
 }
 
@@ -260,13 +245,12 @@ void UR10Controller::gripperCallback(
 }
 
 bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
-  
   drop_flag_ = true;
 
   ros::spinOnce();
   ROS_INFO_STREAM("Dropping on AGV...");
 
-  if (gripper_state_){
+  if (gripper_state_) {
     auto temp_pose = part_pose;
     temp_pose.position.z += 0.5;
     this->goToTarget({temp_pose, part_pose});
@@ -285,11 +269,11 @@ bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
     ros::spinOnce();
     if (!gripper_state_) {
       std::vector<double> drop_pose_;
-	  if(part_pose.position.y>0)
-	  drop_pose_ = {0.5, 1.7, -1.1, 1.9, 3.9, 4.7, 0};
-	  else
-	  drop_pose_ = {-0.5, 4.5, -1.1, 1.9, 3.9, 4.7, 0};
-	  sendRobot(drop_pose_);
+      if (part_pose.position.y > 0)
+        drop_pose_ = {0.5, 1.7, -1.1, 1.9, 3.9, 4.7, 0};
+      else
+        drop_pose_ = {-0.5, 4.5, -1.1, 1.9, 3.9, 4.7, 0};
+      sendRobot(drop_pose_);
       // ROS_INFO_STREAM("Going to home...");
       // this->goToTarget({temp_pose, home_cart_pose_});
       // ros::Duration(3.0).sleep();
@@ -308,7 +292,9 @@ bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   std::vector<double> robot_pose_ = {a, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
   sendRobot(robot_pose_);
 
-  ROS_INFO_STREAM("fixed_orientation_" << fixed_orientation_.x << fixed_orientation_.y << fixed_orientation_.z << fixed_orientation_.w );
+  ROS_INFO_STREAM("fixed_orientation_"
+                  << fixed_orientation_.x << fixed_orientation_.y
+                  << fixed_orientation_.z << fixed_orientation_.w);
   part_pose.orientation = fixed_orientation_;
   ROS_WARN_STREAM("Picking the part...");
 
@@ -339,5 +325,57 @@ bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_INFO_STREAM("Going to waypoint...");
   this->goToTarget(temp_pose_1);
   // this->goToTarget({temp_pose_2});
+  return gripper_state_;
+}
+
+bool UR10Controller::flipPart(geometry_msgs::Pose& part_pose) {
+  this->pickPart(part_pose);
+  auto temp = part_pose;
+  tf::Quaternion q = {temp.orientation.x, temp.orientation.y,
+                      temp.orientation.z, temp.orientation.w};
+  tf::Matrix3x3 m;
+  double roll, pitch, yaw;
+  m.setRotation(q);
+  m.getRPY(roll, pitch, yaw);
+  yaw = 0;
+  roll = 90;
+  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
+  temp.orientation.x = q.getX();
+  temp.orientation.y = q.getY();
+  temp.orientation.z = q.getZ();
+  temp.orientation.w = q.getW();
+  temp.position.z += 0.35;
+  this->goToTarget(temp);
+  ROS_INFO_STREAM("reaching temp 1");  
+  ros::Duration(1.0).sleep();
+  this->gripperToggle(false);
+  roll = 0;
+  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
+  temp.orientation.x = q.getX();
+  temp.orientation.y = q.getY();
+  temp.orientation.z = q.getZ();
+  temp.orientation.w = q.getW();  
+  temp.position.z += 0.5;
+  this->goToTarget(temp);
+  ROS_INFO_STREAM("reaching temp 2");  
+  ros::Duration(1.0).sleep();  
+  roll = -90;
+  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
+  temp.orientation.x = q.getX();
+  temp.orientation.y = q.getY();
+  temp.orientation.z = q.getZ();
+  temp.orientation.w = q.getW();  
+  temp.position.z -= 0.5;
+  temp.position.y -= 0.15;
+  this->goToTarget(temp);
+  ros::Duration(1.0).sleep();  
+  ROS_INFO_STREAM("reaching temp 3");  
+  this->gripperToggle(true);
+  temp = part_pose;
+  temp.position.z += 0.5;
+  this->goToTarget(temp);
+  ros::Duration(1.0).sleep();  
+  ROS_INFO_STREAM("reaching temp 4");
+  ros::spinOnce();
   return gripper_state_;
 }
