@@ -45,21 +45,7 @@ OrderManager::OrderManager() {
   osrf_gear::GetMaterialLocations srv;
   ros::ServiceClient get_bin_client_ =  
   manager_nh_.serviceClient<osrf_gear::GetMaterialLocations>("/ariac/material_locations");
-  // scanned_objects_ = camera_.getParts();
-  // ROS_WARN_STRE  AM("jknwscwljsw");
- //  srv.request.material_type = "piston_rod_part";
- //  get_bin_client_.call(srv);
- //  ros::Duration(1.0).sleep();
-  
- // auto pistonrodbinloacation= srv.response;
- // ROS_INFO_STREAM("piston bin"<< pistonrodbinloacation.storage_units[0].unit_id);
-
-  // counter_=0;
-
-  // conveyor_camera_subscriber_ = manager_nh_.subscribe("/ariac/logical_camera_5", 10,
-                                              // &OrderManager::conveyor_camera_Callback, this);
-
-  // ROS_INFO_STREAM("Alert!!!!!!!!!!!!!" << scanned_objects_);
+ 
 }
 
 OrderManager::~OrderManager() {}
@@ -81,70 +67,23 @@ void OrderManager::orderCallback(const osrf_gear::Order::ConstPtr& order_msg) {
 
 std::string OrderManager::getPartType(std::string object) {
 
-  // ROS_INFO_STREAM("here1"<< object);
-  if (scanned_objects_[object].size())
-  {
-  std::string part = scanned_objects_[object].back();
-    // ROS_INFO_STREAM("here2"<<part);
+  if (scanned_objects_[object].size()){
 
-  // ROS_INFO_STREAM("here 7>>>>");
-  scanned_objects_[object].pop_back();
-  return part;
+    std::string part = scanned_objects_[object].back();
+    scanned_objects_[object].pop_back();
+    return part;
+
    }
-   else
-   {  submitAGV(1,"order_1_kit_0");
-      submitAGV(2,"order_0_kit_0");
+   else{
+
+    ROS_ERROR_STREAM("No Parts Left on Bin");
+    submitAGV(1,"order_1_kit_0");
+    submitAGV(2,"order_0_kit_0");
+
    } 
-   // ROS_INFO_STREAM("here3");
-
-  // ROS_INFO_STREAM("here 8>>>>");
-
-
 }
 
-// void OrderManager::executeOrder() {
-//   ROS_INFO_STREAM("Executing order...");
-//   geometry_msgs::Pose part_pose;
-//   bool success;
 
-//   for (auto& i : order_) {
-//     ROS_WARN_STREAM(">>>>>>: " << i.first);
-//     ros::Duration(1.0).sleep();
-//   }
-
-//   ros::spinOnce();
-//   ros::Duration(3.0).sleep();
-//   geometry_msgs::Pose dropped_pose =
-//       camera_.getPartPose("/world", "/agv2_load_point_frame");
-//   dropped_pose.position.z += 0.1;
-
-//   for (auto& kit : order_) {
-//     ROS_INFO_STREAM(">>>>>>>>" << kit.first);
-//     std::list<std::string> parts = kit.second;
-//     std::string object;
-//     while (!parts.empty()) {
-//       ROS_INFO_STREAM("here 1>>>> " << kit.first);
-//       object = this->getPartType(kit.first);
-//       ROS_INFO_STREAM("here 2>>>>");
-//       part_pose = camera_.getPartPose("/world", object);
-//       ROS_INFO_STREAM("here 3>>>>");
-//       part_pose.position.z = part_pose.position.z + 0.025;
-//       robot_.pickPart(part_pose);
-//       ROS_INFO_STREAM("here 4>>>>");
-//       parts.pop_front();
-//       ROS_INFO_STREAM("here 5>>>>");
-//       ROS_INFO_STREAM("Part picked: " << object);
-//       success = robot_.dropPart(dropped_pose);
-//       if (!success) {
-//         ROS_WARN_STREAM("Part lost and cannot drop!!!");
-//         parts.push_front(this->getPartType(kit.first));
-//         ROS_WARN_STREAM("Current part list size: " << parts.size());
-//       }
-//     }
-
-//     ROS_INFO_STREAM("Part dropped: " << object);
-//   }
-// }
 
 bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum) {
   ROS_WARN_STREAM("In PicknPlace Function");
@@ -164,22 +103,12 @@ bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose>
   else if(object_type== "pulley_part")
       offset+= 0.082;
   else if(object_type== "gasket_part")
-      offset+= 0.01;
+      offset+= 0.012;
 
     part_pose.position.z += offset;
 
-  // if(object_type == "pulley_part"){
-    // part_pose.position.z += 0.078;
     ROS_INFO_STREAM("Increasing Z for Part"<< object_type << " : " << part_pose.position.z);
-    // bool failed_pick = robot_.flipPart(part_pose);
-    // ROS_INFO_STREAM("Pick Check =  " << failed_pick);
-    // ros::Duration(0.5).sleep();
-    // while(!failed_pick){
-    //     auto part_pose = camera_.getPartPose("/world",object_frame);
-    //   failed_pick = robot_.flipPart(part_pose); 
-    // }
-  // }
-  // else{
+    
   bool failed_pick = robot_.pickPart(part_pose);
   ROS_INFO_STREAM("Pick Check =  " << failed_pick);
   ros::Duration(0.1).sleep();
@@ -188,8 +117,6 @@ bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose>
       failed_pick = robot_.pickPart(part_pose); 
        ros::spinOnce();
         ros::Duration(0.1).sleep();
-
-    // }
   }
 
  
@@ -257,20 +184,17 @@ void OrderManager::executeOrder() {
   int finish=0;
   for (auto kit : order1_.kits) {
    
-
-
-    ROS_WARN_STREAM("Kit Type" << kit.kit_type);
-    // std::list<std::string> parts = kit.second;
-    // std::string object;
     for (auto& object : kit.objects) {
+         
          ros::spinOnce();
+         ros::Duration(0.1).sleep();
          auto kits1_ = order_.kits;
 
      // For Higher Priority    
 
-                   if(kits1_[0].kit_type== "order_1_kit_0" && finish==0){
+                   if(kits1_[0].kit_type != kit.kit_type && finish==0){
                      ROS_WARN_STREAM("HIGH PRIORITY ORDER" );
-                     ros::spinOnce();
+
                      for (auto kitnew : order_.kits) {
 
 
@@ -359,28 +283,3 @@ void OrderManager::submitAGV(int num, std::string name) {
     ROS_INFO("Service succeeded.");
 }
 
-// void OrderManager::conveyor_camera_Callback(
-//     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-//   conveyor_parts_ = *image_msg;
-//   this->scanConveyorParts();
-// }
-
-// void OrderManager::scanConveyorParts(){
-
-//   // for (auto& msg : conveyor_parts_.models) {
-//       auto msg = conveyor_parts_.models[0];
-//       std::string part = "logical_camera_5_" + msg.type + "_" +
-//                          std::to_string(counter_) + "_frame";
-//       conveyor_parts_list_[msg.type].emplace_back(part);
-//       counter_++;
-//       // ROS_INFO_STREAM("Getting Conveyor Part"<< counter_ << msg.type);
-//       // cam_4_ = true;
-//     }
-
-
-
-
-// }
-// std::map<std::string, std::list<std::string>> OrderManager::getConveyorParts(){
-//   return conveyor_parts_list;
-// }
