@@ -94,9 +94,19 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
       "/ariac/gripper/control");
   counter_ = 0;
   drop_flag_ = false;
+
+  joint_subscriber_ = ur10_nh_.subscribe("/ariac/arm/state", 10,
+                                         &UR10Controller::jointCallback, this);
+  joint_publisher_ = ur10_nh_.advertise<trajectory_msgs::JointTrajectory>(
+      "/ariac/arm/command", 10);
 }
 
 UR10Controller::~UR10Controller() {}
+
+void UR10Controller::jointCallback(
+    const control_msgs::JointTrajectoryControllerState::ConstPtr& joint_msg) {
+  curr_joint_states_ = *joint_msg;
+}
 
 bool UR10Controller::planner() {
   ROS_INFO_STREAM("Planning started...");
@@ -215,27 +225,6 @@ void UR10Controller::gripperToggle(const bool& state) {
   }
 }
 
-void UR10Controller::goToConveyor() {
-  this->sendRobot(conv_joint_pose_);
-  // robot_move_group_.jointPosePublisher(temp1);
-  geometry_msgs::Pose temp;
-  temp.position.x = 1.230612;
-  temp.position.y = 1.828500;
-  temp.position.z = 0.951075;
-  // temp.orientation = home_cart_pose_.orientation;
-  auto temp2 = temp;
-  temp2.position.z += 0.015;
-
-  // this->goToTarget({temp2, temp});
-  this->goToTarget(temp);
-  while (!gripper_state_) {
-    ros::spinOnce();
-    this->gripperToggle(true);
-  }
-  this->sendRobot(conv_joint_pose_);
-  this->sendRobot(home_joint_pose_);
-}
-
 void UR10Controller::gripperCallback(
     const osrf_gear::VacuumGripperState::ConstPtr& grip) {
   gripper_state_ = grip->attached;
@@ -302,10 +291,10 @@ bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   part_pose.position.z = part_pose.position.z + offset_;
   auto temp_pose_1 = part_pose;
   temp_pose_1.position.z += 0.35;
-  this->goToTarget({part_pose});
+  // this->goToTarget({part_pose});
   // this->goToTarget({temp_pose_1, part_pose});
 
-  // this->goToTarget(part_pose);
+  this->goToTarget(part_pose);
   ROS_INFO_STREAM("Actuating the gripper..." << part_pose.position.z);
   this->gripperToggle(true);
   ros::spinOnce();
@@ -328,54 +317,113 @@ bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   return gripper_state_;
 }
 
-bool UR10Controller::flipPart(geometry_msgs::Pose& part_pose) {
-  this->pickPart(part_pose);
-  auto temp = part_pose;
-  tf::Quaternion q = {temp.orientation.x, temp.orientation.y,
-                      temp.orientation.z, temp.orientation.w};
-  tf::Matrix3x3 m;
-  double roll, pitch, yaw;
-  m.setRotation(q);
-  m.getRPY(roll, pitch, yaw);
-  yaw = 0;
-  roll = 90;
-  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
-  temp.orientation.x = q.getX();
-  temp.orientation.y = q.getY();
-  temp.orientation.z = q.getZ();
-  temp.orientation.w = q.getW();
-  temp.position.z += 0.35;
-  this->goToTarget(temp);
-  ROS_INFO_STREAM("reaching temp 1");  
+void UR10Controller::publishJoints(const std::vector<double>& tar) {
+  trajectory_msgs::JointTrajectory target;
+  target.header.stamp = ros::Time::now();
+  target.joint_names = curr_joint_states_.joint_names;
+  // target.joint_names.pop_back();
+  target.points.resize(1);
+  target.points[0].positions.resize(target.joint_names.size());
+  ROS_WARN_STREAM("here: names done");
+  for (int i = 0; i < target.joint_names.size(); ++i) {
+    ROS_INFO_STREAM("iter: " << i);
+    // ROS_INFO_STREAM("tar: " << tar[i]);
+    target.points[0].positions[i] = tar[i];
+  }
+
+  ROS_WARN_STREAM("here: points");
+  target.points[0].time_from_start = ros::Duration(1.0);
+  ROS_WARN_STREAM("here: time");
+  joint_publisher_.publish(target);
   ros::Duration(1.0).sleep();
-  this->gripperToggle(false);
-  roll = 0;
-  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
-  temp.orientation.x = q.getX();
-  temp.orientation.y = q.getY();
-  temp.orientation.z = q.getZ();
-  temp.orientation.w = q.getW();  
-  temp.position.z += 0.5;
-  this->goToTarget(temp);
-  ROS_INFO_STREAM("reaching temp 2");  
-  ros::Duration(1.0).sleep();  
-  roll = -90;
-  q = tf::createQuaternionFromRPY(roll, pitch, yaw);
-  temp.orientation.x = q.getX();
-  temp.orientation.y = q.getY();
-  temp.orientation.z = q.getZ();
-  temp.orientation.w = q.getW();  
-  temp.position.z -= 0.5;
-  temp.position.y -= 0.15;
-  this->goToTarget(temp);
-  ros::Duration(1.0).sleep();  
-  ROS_INFO_STREAM("reaching temp 3");  
-  this->gripperToggle(true);
-  temp = part_pose;
-  temp.position.z += 0.5;
-  this->goToTarget(temp);
-  ros::Duration(1.0).sleep();  
-  ROS_INFO_STREAM("reaching temp 4");
+}
+
+bool UR10Controller::flipPart(geometry_msgs::Pose& part_pose) {
+  // this->pickPart(part_pose);
   ros::spinOnce();
+  auto waypoint = curr_joint_states_.actual.positions;
+  waypoint[1] = 1.5960846338517403;
+  this->publishJoints(waypoint);
+  ros::spinOnce();
+  waypoint = curr_joint_states_.actual.positions;
+  // waypoint[]
+}
+
+bool UR10Controller::goToConveyor(const geometry_msgs::Pose& part_pose) {
+  ros::Time curr_time = ros::Time::now();
+  ros::spinOnce();
+  auto conv_pose = curr_joint_states_.actual.positions;
+  conv_pose[1] = 0.5;
+  conv_pose[0] = part_pose.position.y;
+
+  this->sendRobot(conv_pose);
+  this->gripperToggle(true);
+
+  auto model = robot_move_group_.getRobotModel();
+  auto group = model->getJointModelGroup("manipulator");
+  robot_state::RobotStatePtr kinematic_state(
+      new robot_state::RobotState(model));
+
+  Eigen::Vector3d ref_position(0.0, 0.0, 0.0);
+  Eigen::VectorXd error = Eigen::VectorXd::Zero(7);
+  Eigen::MatrixXd jacobian;
+
+  double time_diff;
+  Eigen::JacobiSVD<Eigen::MatrixXd> svd;
+  target_pose_.position = part_pose.position;
+  target_pose_.position.z += 1.1 * offset_;
+  target_pose_.position.y += 1.0 * 0.2;
+
+  ros::Time prev_time;
+  while (target_pose_.position.y > -2.1 && !gripper_state_) {
+    prev_time = curr_time;
+    curr_time = ros::Time::now();
+    time_diff = curr_time.toSec() - prev_time.toSec();
+
+    target_pose_.position.y += (0.2 * time_diff);
+    ros::spinOnce();
+    conv_pose = curr_joint_states_.actual.positions;
+    kinematic_state->setJointGroupPositions(group, conv_pose);
+    kinematic_state->update();
+    kinematic_state->getJacobian(group,
+                                 kinematic_state->getLinkModel("ee_link"),
+                                 ref_position, jacobian, true);
+
+    auto effector = kinematic_state->getGlobalLinkTransform("ee_link");
+    Eigen::Quaterniond effector_quat(effector.rotation());
+
+    error(0) = effector.translation()[0] - target_pose_.position.x;
+    error(1) = effector.translation()[1] - target_pose_.position.y;
+    error(2) =
+        std::min(effector.translation()[2] - target_pose_.position.z, 0.25);
+    error(3) = effector_quat.x() - home_cart_pose_.orientation.x;
+    error(4) = effector_quat.y() - home_cart_pose_.orientation.y;
+    error(5) = effector_quat.z() - home_cart_pose_.orientation.z;
+    error(6) = effector_quat.w() - home_cart_pose_.orientation.w;
+
+    svd = jacobian.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+    Eigen::MatrixXd svd_inv(jacobian.cols(), jacobian.rows());
+    svd_inv.setZero();
+
+    auto values = svd.singularValues();
+
+    for (auto index = 0; index < values.size(); ++index) {
+      if (values(index) > Eigen::MatrixXd::Scalar(1e-3)) {
+        svd_inv(index, index) = Eigen::MatrixXd::Scalar{1.0} / values(index);
+      }
+    }
+
+    auto update = 0.9 * svd.matrixV() * svd_inv * svd.matrixU().transpose() *
+                  (error / time_diff);
+
+    for (size_t count = 0; count < 7; ++count) {
+      conv_pose[count] -= update[count];
+    }
+    this->publishJoints(conv_pose);
+  }
+
+  ros::spinOnce();
+  ros::Duration(0.5).sleep();
   return gripper_state_;
 }
