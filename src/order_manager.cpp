@@ -86,6 +86,7 @@ std::string OrderManager::getPartType(std::string object) {
 
 
 bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum) {
+
   ROS_WARN_STREAM("In PicknPlace Function");
   std::string object_type = object_prop.first;
   ROS_INFO_STREAM("Part Type " << object_type);
@@ -122,45 +123,30 @@ bool OrderManager::pickAndPlace(const std::pair<std::string,geometry_msgs::Pose>
  
 
   geometry_msgs::Pose drop_pose = object_prop.second;
-  if(object_prop.first == "pulley_part")
-    drop_pose.position.z += 0.078;
+  // if(object_prop.first == "pulley_part")
+    drop_pose.position.z += offset; //0.0078
+
   geometry_msgs::PoseStamped StampedPose_in,StampedPose_out;
   if(agvnum==1){
       StampedPose_in.header.frame_id = "/agv1_load_point_frame";
       StampedPose_in.pose = drop_pose;
-      ROS_INFO_STREAM("StampedPose_in " << StampedPose_in.pose.position.x);
+      
       part_tf_listener_.transformPose("/world",StampedPose_in,StampedPose_out);
       StampedPose_out.pose.position.z += 0.05;
       StampedPose_out.pose.position.y -= 0.2;
-      // StampedPose_out.pose.orientation.x -= part_pose.orientation.x;
-      // StampedPose_out.pose.orientation.y -= part_pose.orientation.y;
-      // StampedPose_out.pose.orientation.z -= part_pose.orientation.z;
-      // StampedPose_out.pose.orientation.w -= part_pose.orientation.w;
-      ROS_INFO_STREAM("StampedPose_out " << StampedPose_out.pose.position.x);
-      // ROS_INFO_STREAM("here pickAndPlace >>>>");
-    
     }
   else{
       StampedPose_in.header.frame_id = "/agv2_load_point_frame";
       StampedPose_in.pose = drop_pose;
-      ROS_INFO_STREAM("StampedPose_in " << StampedPose_in.pose.position.x);
+      
       part_tf_listener_.transformPose("/world",StampedPose_in,StampedPose_out);
       StampedPose_out.pose.position.z += 0.05;
       StampedPose_out.pose.position.y += 0.2;
-      // StampedPose_out.pose.orientation.x -= part_pose.orientation.x;
-      // StampedPose_out.pose.orientation.y -= part_pose.orientation.y;
-      // StampedPose_out.pose.orientation.z -= part_pose.orientation.z;
-      // StampedPose_out.pose.orientation.w -= part_pose.orientation.w;
-      ROS_INFO_STREAM("StampedPose_out " << StampedPose_out.pose.position.x);
-      // ROS_INFO_STREAM("here pickAndPlace >>>>");
+     
       
   }
     auto result = robot_.dropPart(StampedPose_out.pose);
 
-    // if(result){
-    //    StampedPose_out.pose.position.z -= 0.1;
-    //   auto ch = robot_.pickPart(StampedPose_out.pose);
-    //   } 
   ROS_WARN_STREAM("End of PicknPlace Function");
 
   return result;
@@ -180,10 +166,10 @@ void OrderManager::executeOrder() {
   ros::Duration(1.0).sleep();
   auto order1_ = order_;
   auto kits1_ = order_.kits;
-  ROS_INFO_STREAM("New Order ID " << kits1_[0].kit_type);
-  int finish=0;
+  
+  int finish=0,i=0;
   for (auto kit : order1_.kits) {
-   
+    
     for (auto& object : kit.objects) {
          
          ros::spinOnce();
@@ -192,7 +178,7 @@ void OrderManager::executeOrder() {
 
      // For Higher Priority    
 
-                   if(kits1_[0].kit_type != kit.kit_type && finish==0){
+                   if(kits1_[i].kit_type != kit.kit_type && finish==0){
                      ROS_WARN_STREAM("HIGH PRIORITY ORDER" );
 
                      for (auto kitnew : order_.kits) {
@@ -202,22 +188,16 @@ void OrderManager::executeOrder() {
                       // std::list<std::string> parts = kit.second;
                       // std::string object;
                         for (auto& objectnew : kitnew.objects) {
-                          // object_frame = this->getPartType(object.type);
-                          // ROS_INFO_STREAM("here 2>>>>");
-                          // part_pose = camera_.getPartPose("/world", object_frame);
-                          // ROS_INFO_STREAM("here 3>>>>");
-                          // part_pose.position.z = part_pose.position.z + 0.025;
+                          
                           object_prop.first = objectnew.type;
                           object_prop.second = objectnew.pose;
                           int agvnum=1;
                           failed = pickAndPlace(object_prop,agvnum);
                           while (failed) {
                               ROS_WARN_STREAM("Adding the Failed Parts Back into the list of Higher Priority Order");
-                              // parts.push_front(this->getPartType(kit.first));
-                              // ROS_WARN_STREAM("Current part list size: " << parts.size());
-                              // scanned_objects_[object.type].emplace_back(object_frame);
-                              ROS_WARN_STREAM("Adding part : " << object_prop.first);
-                              // failed_parts_higher.emplace_back(object_prop);
+                              
+                              ROS_INFO_STREAM("Adding part : " << object_prop.first);
+                              
                               failed = pickAndPlace(object_prop,1);
 
                           }
@@ -254,7 +234,7 @@ void OrderManager::executeOrder() {
       ROS_INFO_STREAM("Kit Type" << kit.kit_type);
       submitAGV(2,kit.kit_type);
       ROS_WARN_STREAM("Submitting AGV 2");
-
+      i+=1;
     }
 }
 

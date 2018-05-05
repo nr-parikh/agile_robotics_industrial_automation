@@ -150,11 +150,11 @@ void UR10Controller::goToTarget(
            fixed_orientation_.w};
       m.setRotation(q);
       m.getRPY(r_h, p_h, y_h);
-      final = tf::createQuaternionFromRPY(r_h, p_h, y_t);
-      i.orientation.x = final.getX();
-      i.orientation.y = final.getY();
-      i.orientation.z = final.getZ();
-      i.orientation.w = final.getW();
+      i.orientation = tf::createQuaternionMsgFromRollPitchYaw(r_h, p_h, y_t);
+      // i.orientation.x = final.getX();
+      // i.orientation.y = final.getY();
+      // i.orientation.z = final.getZ();
+      // i.orientation.w = final.getW();
 
       waypoints.emplace_back(i);
     }
@@ -219,6 +219,8 @@ bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
   ROS_WARN_STREAM ("In Drop part Function"<< part_pose.position.y);
 
   drop_flag_ = true;
+  auto temp_pose = part_pose;
+  auto temp_pose2 = part_pose;
  
   ros::spinOnce();
   ros::Duration(0.1).sleep();
@@ -234,10 +236,14 @@ bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
     // angle_pos_ = {angle_pos_[1],angle_pos_[3],2.61,0,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
 
 
-    if(part_pose.position.y>0)
-     angle_pos_ = {angle_pos_[1]-0.1,angle_pos_[3]-3.14,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
-    else
-     angle_pos_ = {angle_pos_[1]+0.1,angle_pos_[3]+3.14,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
+    if(part_pose.position.y>0 && angle_pos_[1]>0)
+     angle_pos_ = {angle_pos_[1],angle_pos_[3]+3.14+1.57,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
+    else if(part_pose.position.y>0 && angle_pos_[1]<0)
+     angle_pos_ = {angle_pos_[1],angle_pos_[3]-1.57,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
+   else if(part_pose.position.y<0 && angle_pos_[1]>0)
+     angle_pos_ = {angle_pos_[1],angle_pos_[3]+1.57,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
+    else if(part_pose.position.y<0 && angle_pos_[1]<0)
+     angle_pos_ = {angle_pos_[1],angle_pos_[3]-3.14-1.57,-1.1,1.9,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
 
 
     // angle_pos_ = {angle_pos_[1],angle_pos_[3],-1.1,2,angle_pos_[4],angle_pos_[5],angle_pos_[6]};
@@ -251,27 +257,27 @@ bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
 
     sendRobot(angle_pos_);
     
+    bool flg= false;
+
+    if (!gripper_state_){
+        goto label;
+      }
 
 
     //For Quality CHeck
-    auto temp_pose = part_pose;
-    auto temp_pose2 = part_pose;
-    temp_pose.position.z += 0.4 ;
-    temp_pose2.position.z += 0.01;
-
-
+    
+    temp_pose.position.z += 0.3 ;
     this->goToTarget({temp_pose});
 
     ros::spinOnce();
     ros::Duration(0.1).sleep();
-    bool flg= false;
 
     if (!gripper_state_){
         flg= true;
         goto label;
       }
 
-  
+    temp_pose2.position.z += 0.01;
     this->goToTarget({temp_pose2,part_pose});
 
     
