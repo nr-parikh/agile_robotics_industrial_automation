@@ -1,0 +1,7 @@
+Steps to run the code:
+
+> rosrun osrf_gear gear.py -f `catkin_find --share osrf_gear`/config/qual1a.yaml ~/ros_ws/src/agile_robotics_industrial_automation/config/team_config.yaml
+> In other terminal, execute roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch sim:=true
+> In other terminal, execute rosrun agile_robotics_industrial_automation qual1_node
+> While executing the node pass the problem file as an argument of the node. 
+> To check the PDDL file, popf3-clp group3ariac-domain.pddl new-group3ariac-problem.pddl

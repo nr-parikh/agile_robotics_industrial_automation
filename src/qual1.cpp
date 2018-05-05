@@ -1,4 +1,4 @@
-// BSD 3-Clause License
+  // BSD 3-Clause License
 
 // Copyright (c) 2018, Neel Parikh
 // All rights reserved.
@@ -56,25 +56,7 @@ void startCompetition(ros::NodeHandle &node) {
   }
 }
 
-void submitAGV(ros::NodeHandle &node) {
-  ros::ServiceClient start_client =
-      node.serviceClient<osrf_gear::AGVControl>("/ariac/agv2");
 
-  if (!start_client.exists()) {
-    ROS_INFO("Waiting for the client to be ready...");
-    start_client.waitForExistence();
-    ROS_INFO("Service started.");
-  }
-
-  osrf_gear::AGVControl srv;
-  srv.request.kit_type = "order_0_kit_0";
-  start_client.call(srv);
-
-  if (!srv.response.success) {
-    ROS_ERROR_STREAM("Service failed!");
-  } else
-    ROS_INFO("Service succeeded.");
-}
 
 void endCompetition(ros::NodeHandle &node) {
   ros::ServiceClient start_client =
@@ -100,42 +82,19 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "ariac_example_node");
 
   ros::NodeHandle node;
-  // Sensor camera_;
+
   OrderManager manager;
-  // auto targets = {"logical_camera_2_gear_part_4_frame",
-  //                 "logical_camera_2_gear_part_5_frame"};
 
-  // geometry_msgs::Pose target;
-  // // target.position.x = -0.5;
-  // // target.position.y = -0.735;
-  // // target.position.z = 0.724;
-
-  // UR10Controller robot;
-  // for (auto i : targets) {
-  //   target = camera_.getPartPose("/world", i);
-  //   robot.pickPart(target);
-  //   robot.dropPart();
-  // }
   startCompetition(node);
 
-  ros::Duration(2.0).sleep();
+  ros::Duration(0.5).sleep(); //initial time = 2
 
   manager.executeOrder();
-  // auto temp = manager.getOrder();
 
-  // for(auto it : temp){
-  //   ROS_ERROR_STREAM(">>>>>>>" << it.first);
-  // }
+  ros::Duration(1).sleep();
 
-  ros::Duration(0.5).sleep();
+  // endCompetition(node);
 
-  // submitAGV(node);
-
-  ros::Duration(1.0).sleep();
-
-  endCompetition(node);
-
-  // ROS_WARN_STREAM("Killing the node....");
 
   return 0;
 }

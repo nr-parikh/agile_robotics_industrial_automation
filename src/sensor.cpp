@@ -46,7 +46,11 @@ Sensor::Sensor() {
   counter_4_ = 1;
 
 
-  init_ = false;
+  init_1_ = false;
+  init_2_ = false;
+  init_3_ = false;
+  init_4_ = false;
+
   cam_1_ = false;
   cam_2_ = false;
   cam_3_ = false;
@@ -58,36 +62,48 @@ Sensor::~Sensor() {}
 
 void Sensor::camera1Callback(
     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-  if (init_) {
+  if (init_1_) {
     return;
   }
+  init_1_ = true;
+  if(image_msg->models.size()){
   current_parts_1_ = *image_msg;
   this->scanParts(1);
+}
 }
 
 void Sensor::camera2Callback(
     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-  if (init_) {
+  if (init_2_) {
     return;
   }
+  init_2_ = true;
+  if(image_msg->models.size()){
   current_parts_2_ = *image_msg;
   this->scanParts(2);
 }
+}
 void Sensor::camera3Callback(
     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-  if (init_) {
+  if (init_3_) {
     return;
   }
+  init_3_ = true;
+  if(image_msg->models.size()){
   current_parts_3_ = *image_msg;
   this->scanParts(3);
 }
+}
 void Sensor::camera4Callback(
     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-  if (init_) {
+  if (init_4_) {
     return;
   }
+  init_4_ = true;
+  if(image_msg->models.size()){
   current_parts_4_ = *image_msg;
   this->scanParts(4);
+}
 }
 
 void Sensor::scanParts(const int cam_number) {
@@ -115,7 +131,7 @@ void Sensor::scanParts(const int cam_number) {
       counter_3_++;
       cam_3_ = true;
     }
-  }else {
+  }else if(cam_number== 4) {
     for (auto& msg : current_parts_4_.models) {
       std::string part = "logical_camera_4_" + msg.type + "_" +
                          std::to_string(counter_4_) + "_frame";
@@ -125,9 +141,11 @@ void Sensor::scanParts(const int cam_number) {
     }
   }
 
-  if (cam_1_ && cam_2_ && cam_4_) {
-    init_ = true;
-  }
+  // if (cam_1_ && cam_2_ && cam_3_ && cam_4_) {
+  //   init_ = true;
+  // }
+   // ROS_INFO_STREAM("end of scan parts"<<  parts_list_['disc_part']);
+  
 }
 
 geometry_msgs::Pose Sensor::getPartPose(const std::string& src_frame,
@@ -136,7 +154,7 @@ geometry_msgs::Pose Sensor::getPartPose(const std::string& src_frame,
 
   ROS_INFO_STREAM("Getting part pose...");
 
-  if (init_) {
+  // if (init_) {
     camera_tf_listener_.waitForTransform(src_frame, target_frame, ros::Time(0),
                                          ros::Duration(20));
     camera_tf_listener_.lookupTransform(src_frame, target_frame, ros::Time(0),
@@ -145,17 +163,21 @@ geometry_msgs::Pose Sensor::getPartPose(const std::string& src_frame,
     part_pose.position.x = camera_tf_transform_.getOrigin().x();
     part_pose.position.y = camera_tf_transform_.getOrigin().y();
     part_pose.position.z = camera_tf_transform_.getOrigin().z();
+    part_pose.orientation.x = camera_tf_transform_.getRotation().x();
+    part_pose.orientation.y = camera_tf_transform_.getRotation().y();
+    part_pose.orientation.z = camera_tf_transform_.getRotation().z();
+    part_pose.orientation.w = camera_tf_transform_.getRotation().w();
 
-  } else {
-    ros::spinOnce();
-    ros::Duration(1.0).sleep();
-    this->scanParts(1);
-    ros::spinOnce();
-    ros::Duration(1.0).sleep();
-    this->scanParts(2);
+  // } else {
+  //   ros::spinOnce();
+  //   ros::Duration(1.0).sleep();
+  //   this->scanParts(1);
+  //   ros::spinOnce();
+  //   ros::Duration(1.0).sleep();
+  //   this->scanParts(2);
 
-    part_pose = this->getPartPose(src_frame, target_frame);
-  }
+    // part_pose = this>-getPartPose(src_frame, target_frame);
+  // }
 
   return part_pose;
 }

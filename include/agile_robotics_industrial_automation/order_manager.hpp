@@ -41,9 +41,15 @@
 #include <osrf_gear/Order.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
+
 
 #include "agile_robotics_industrial_automation/sensor.hpp"
 #include "agile_robotics_industrial_automation/ur10_controller.hpp"
+#include <osrf_gear/LogicalCameraImage.h>
+#include <osrf_gear/GetMaterialLocations.h>
+
 
 class OrderManager {
  public:
@@ -54,17 +60,25 @@ class OrderManager {
   std::string getPartType(std::string object);
   // std::map<std::string, std::list<std::string>> getOrder();
   bool pickAndPlace(std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum);
-  void submitAGV(int num);
+  void submitAGV(int num,std::string name);
+  void conveyor_camera_Callback(
+  const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
+  // std::map<std::string, std::list<std::string>> getConveyorParts();
+  void scanConveyorParts();
+
 
  private:
   ros::NodeHandle manager_nh_;
-  ros::Subscriber order_subscriber_;
+  ros::Subscriber order_subscriber_,conveyor_camera_subscriber_;
   Sensor camera_;
   UR10Controller robot_;
-  
+
   tf::TransformListener part_tf_listener_;
   std::pair<std::string,geometry_msgs::Pose> object_prop;
   std::string object;
-  std::map<std::string, std::list<std::string>> scanned_objects_;
+  std::map<std::string, std::list<std::string>> scanned_objects_,conveyor_parts_list_;
   osrf_gear::Order order_;
+  int counter_;
+  osrf_gear::LogicalCameraImage conveyor_parts_;
+
 };
