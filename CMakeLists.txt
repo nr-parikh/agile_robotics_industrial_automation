@@ -30,18 +30,23 @@ include
 
 add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor.cpp src/order_manager.cpp)
 
+
+
+
 add_dependencies(qual1_node ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(qual1_node
+
+target_link_libraries(qual1_node 
   ${catkin_LIBRARIES}
-)
+)	
+
 
 install(PROGRAMS
   scripts/qual1.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(TARGETS qual1_node
+install(TARGETS qual1_node 
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

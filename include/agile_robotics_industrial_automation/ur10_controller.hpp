@@ -44,6 +44,9 @@
 
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
+#include <osrf_gear/LogicalCameraImage.h>
+#include <sensor_msgs/JointState.h>
+
 
 class UR10Controller {
  public:
@@ -53,18 +56,26 @@ class UR10Controller {
   void execute();
   void goToTarget(std::initializer_list<geometry_msgs::Pose> list);
   void goToTarget(const geometry_msgs::Pose& pose);
-  void sendRobotHome();
+  void goToTargetpulley(const geometry_msgs::Pose& pose);
+  void sendRobot(std::vector<double> pose);
   bool dropPart(geometry_msgs::Pose pose);
   void gripperToggle(const bool& state);
   void gripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
+  void quality1Callback(const osrf_gear::LogicalCameraImage ::ConstPtr& quality1_);
+  void quality2Callback(const osrf_gear::LogicalCameraImage ::ConstPtr& quality2_);
   void gripper_state_check(geometry_msgs::Pose pose);
+  void jointCallback(const sensor_msgs::JointState::ConstPtr& joint);
   bool pickPart(geometry_msgs::Pose& part_pose);
+  bool flipPart(geometry_msgs::Pose& part_pose);
 
  private:
   ros::NodeHandle ur10_nh_;
   ros::ServiceClient gripper_client_;
   ros::NodeHandle gripper_nh_;
   ros::Subscriber gripper_subscriber_;
+  ros::Subscriber quality1_subscriber_;
+  ros::Subscriber quality2_subscriber_;
+  ros::Subscriber arm_state_subscriber_;
 
   tf::TransformListener robot_tf_listener_;
   tf::StampedTransform robot_tf_transform_;
@@ -91,4 +102,6 @@ class UR10Controller {
   tf::Quaternion q;
   int counter_;
   bool gripper_state_, drop_flag_;
+  osrf_gear::LogicalCameraImage quality_1 , quality_2;
+  sensor_msgs::JointState joint_state_;
 };

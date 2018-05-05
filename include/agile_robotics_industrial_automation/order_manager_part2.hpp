@@ -35,53 +35,51 @@
 #include <map>
 #include <string>
 
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <osrf_gear/LogicalCameraImage.h>
+#include <osrf_gear/Order.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 
+
+#include "agile_robotics_industrial_automation/sensor.hpp"
+#include "agile_robotics_industrial_automation/ur10_controller.hpp"
 #include <osrf_gear/LogicalCameraImage.h>
+#include <osrf_gear/VacuumGripperControl.h>
+#include <osrf_gear/GetMaterialLocations.h>
 
-class Sensor {
+
+
+class OrderManager {
  public:
-  Sensor();
-  ~Sensor();
-  void camera1Callback(
-      const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
-  void camera2Callback(
-      const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
-  void camera3Callback(
-      const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
-  void camera4Callback(
-      const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
-  geometry_msgs::Pose getPartPose(const std::string& src_frame,
-                                  const std::string& target_frame);
-  std::map<std::string, std::list<std::string>> getParts();
-  void scanParts(int cam_number);
-
+  OrderManager();
+  ~OrderManager();
+  void orderCallback(const osrf_gear::Order::ConstPtr& order_msg);
+  void executeOrder();
+  std::string getPartType(std::string object);
+  // std::map<std::string, std::list<std::string>> getOrder();
+  bool pickAndPlace(std::pair<std::string,geometry_msgs::Pose> object_prop,int agvnum);
+  void submitAGV(int num);
+  void conveyor_camera_Callback(
+  const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
+  // std::map<std::string, std::list<std::string>> getConveyorParts();
+  void scanConveyorParts();
+  
  private:
-  ros::NodeHandle sensor_nh_;
-  ros::Subscriber camera_1_subscriber_;
-  ros::Subscriber camera_2_subscriber_;
-  ros::Subscriber camera_3_subscriber_;
-  ros::Subscriber camera_4_subscriber_;
+  ros::NodeHandle manager_nh_;
+  ros::Subscriber order_subscriber_,conveyor_camera_subscriber_;
+  Sensor camera_;
+  UR10Controller robot_;
+  
+  tf::TransformListener part_tf_listener_;
+  std::pair<std::string,geometry_msgs::Pose> object_prop;
+  std::string object;
+  std::map<std::string, std::list<std::string>> scanned_objects_,conveyor_parts_list_;
+  osrf_gear::Order order_;
+  int counter_;
+  osrf_gear::LogicalCameraImage conveyor_parts_;
 
-
-  tf::TransformListener camera_tf_listener_;
-  tf::StampedTransform camera_tf_transform_;
-
-  osrf_gear::LogicalCameraImage current_parts_1_;
-  osrf_gear::LogicalCameraImage current_parts_2_;
-  osrf_gear::LogicalCameraImage current_parts_3_;
-  osrf_gear::LogicalCameraImage current_parts_4_;
-
-
-  std::map<std::string, std::list<std::string>> parts_list_;
-
-  bool init_, cam_1_, cam_2_,cam_3_,cam_4_;
-  bool init_1_,init_2_,init_3_,init_4_;
-  int counter_1_;
-  int counter_2_;
-  int counter_3_;
-  int counter_4_;
 };
