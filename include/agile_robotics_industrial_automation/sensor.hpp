@@ -45,6 +45,11 @@
 
 class Sensor {
  public:
+  struct ConveyorPart {
+    std::string _frame;
+    geometry_msgs::Pose _pose;
+    size_t _count;
+  };
   Sensor();
   ~Sensor();
   void camera1Callback(
@@ -55,10 +60,23 @@ class Sensor {
       const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
   void camera4Callback(
       const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
+  void camera5Callback(
+      const osrf_gear::LogicalCameraImage::ConstPtr& image_msg);
+
   geometry_msgs::Pose getPartPose(const std::string& src_frame,
                                   const std::string& target_frame);
   std::map<std::string, std::list<std::string>> getParts();
   void scanParts(int cam_number);
+  void convertPose(const geometry_msgs::PoseStamped& in);
+  geometry_msgs::PoseStamped getPartPose(
+      const geometry_msgs::PoseStamped& input, std::string reference);
+  geometry_msgs::Pose getConveyorPose();
+  std::map<std::string, std::vector<ConveyorPart>> getMap();
+  bool checkPart(const geometry_msgs::Pose& point1,
+                 const geometry_msgs::Pose& point2);
+
+  void findVelocity(const double& d_t);
+  double getVelocity();
 
  private:
   ros::NodeHandle sensor_nh_;
@@ -66,7 +84,7 @@ class Sensor {
   ros::Subscriber camera_2_subscriber_;
   ros::Subscriber camera_3_subscriber_;
   ros::Subscriber camera_4_subscriber_;
-
+  ros::Subscriber camera_5_subscriber_;
 
   tf::TransformListener camera_tf_listener_;
   tf::StampedTransform camera_tf_transform_;
@@ -76,12 +94,20 @@ class Sensor {
   osrf_gear::LogicalCameraImage current_parts_3_;
   osrf_gear::LogicalCameraImage current_parts_4_;
 
-
   std::map<std::string, std::list<std::string>> parts_list_;
 
-  bool init_, cam_1_, cam_2_,cam_3_,cam_4_;
+  bool init_, cam_1_, cam_2_, cam_3_, cam_4_;
+  bool init_1_, init_2_, init_3_, init_4_;
   int counter_1_;
   int counter_2_;
   int counter_3_;
   int counter_4_;
+
+  geometry_msgs::PoseStamped conv_pose_;
+  std_msgs::Header cam_frame_;
+  std::map<std::string, std::vector<ConveyorPart>> conveyor_parts_;
+
+  ros::Time curr_time_, prev_time_;
+  std::vector<double> conv_dist_;
+  double velocity_ = 1.0;  
 };

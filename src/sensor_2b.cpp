@@ -42,6 +42,8 @@ Sensor::Sensor() {
   init_ = false;
   cam_1_ = false;
   cam_2_ = false;
+
+  prev_time_ = ros::Time::now();
 }
 
 Sensor::~Sensor() {}
@@ -51,44 +53,71 @@ void Sensor::camera1Callback(
   geometry_msgs::PoseStamped temp;
   temp.header.frame_id = "logical_camera_1_frame";
 
-  for (auto& i : image_msg->models) {
-    if (i.type == "gasket_part") {
-      temp.pose = i.pose;
-      this->convertPose(temp);
-      if (conveyor_parts_.find("gasket_part_" + std::to_string(counter_1_)) ==
-          conveyor_parts_.end()) {
-        ROS_INFO_STREAM("inside callback if ......");
-        conveyor_parts_["gasket_part_" + std::to_string(counter_1_)] =
-            this->getConveyorPose();
-        counter_1_++;
+  curr_time_ = ros::Time::now();
+  float delta_t = curr_time_.toSec() - prev_time_.toSec();
+  ROS_INFO_STREAM("time difference: " << delta_t);
+  if (velocity_ > 0 && image_msg->models.size()) {
+    for (auto& i : image_msg->models) {
+      if (i.type != "agv1" && i.type != "kit_tray") {
+        ROS_INFO_STREAM("temp: " << image_msg->models.back().pose.position.y);
+        conv_dist_.emplace_back(image_msg->models.back().pose.position.y);
+        break;
+      }
+    }
+
+    if (conv_dist_.size() == 10) {
+      this->findVelocity(delta_t);
+    }
+  } else if (velocity_ < 0) {
+    for (auto& part : conveyor_parts_) {
+      for (auto i = part.second.begin(); i != part.second.end(); ++i) {
+        i->_pose.position.y += velocity_ * delta_t;
+        if (i->_pose.position.y < -3.0) {
+          part.second.erase(i);
+        }
+      }
+    }
+
+    for (const auto& part : image_msg->models) {
+      if (part.type != "agv1" && part.type != "kit_tray") {
+        auto itr = conveyor_parts_.find(part.type);
+        temp.pose = part.pose;
+        bool flag = false;
+        if (itr != conveyor_parts_.end()) {
+          for (const auto& i : itr->second) {
+            if (this->checkPart(i._pose, part.pose)) {
+              flag = true;
+              // ROS_WARN_STREAM("breaking loop.");
+              break;
+            }
+          }
+        }
+        if (!flag) {
+          ConveyorPart c;
+          c._frame = part.type + "_" + std::to_string(counter_1_);
+          c._pose = temp.pose;
+          counter_1_++;
+          ROS_WARN_STREAM("Part added: " << part.type);
+          conveyor_parts_[part.type].emplace_back(c);
+        }
       }
     }
   }
+  prev_time_ = curr_time_;
 }
 
-// void Sensor::camera1Callback(
-//     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
-//   geometry_msgs::PoseStamped temp;
-//   temp.header.frame_id = "logical_camera_1_frame";
-//   for (auto& i : image_msg->models) {
-//     if (i.type == "gasket_part") {
-//       temp.pose = i.pose;
-//       this->convertPose(temp);
-//       for (auto it = conveyor_parts_.begin(); it != conveyor_parts_.end();
-//            it++) {
-//         ROS_INFO_STREAM("here I am...");
-//         auto t = it->first.find("gasket_part");
-//         ROS_INFO_STREAM("found value");
-//         if (t == std::string::npos) {
-//           conveyor_parts_["gasket_part_" + std::to_string(counter_1_)] =
-//               this->getConveyorPose();
-//           counter_1_++;
-//           // ROS_INFO_STREAM("inside callback if.......");
-//         }
-//       }
-//     }
-//   }
-// }
+bool Sensor::checkPart(const geometry_msgs::Pose& point1,
+                       const geometry_msgs::Pose& point2) {
+  double dist = std::pow(point1.position.x - point2.position.x, 2) +
+                std::pow(point1.position.y - point2.position.y, 2) +
+                std::pow(point1.position.z - point2.position.z, 2);
+  double angle = std::pow(point1.orientation.x - point2.orientation.x, 2) +
+                 std::pow(point1.orientation.y - point2.orientation.y, 2) +
+                 std::pow(point1.orientation.z - point2.orientation.z, 2) +
+                 std::pow(point1.orientation.w - point2.orientation.w, 2);
+
+  return dist < std::pow(0.1, 2) && angle < std::pow(0.1, 2);
+}
 
 void Sensor::camera2Callback(
     const osrf_gear::LogicalCameraImage::ConstPtr& image_msg) {
@@ -136,6 +165,24 @@ std::map<std::string, std::list<std::string>> Sensor::getParts() {
 
 geometry_msgs::Pose Sensor::getConveyorPose() { return this->conv_pose_.pose; }
 
-std::map<std::string, geometry_msgs::Pose> Sensor::getMap() {
+std::map<std::string, std::vector<Sensor::ConveyorPart>> Sensor::getMap() {
   return this->conveyor_parts_;
 }
+
+void Sensor::findVelocity(const double& d_t) {
+  double* vel = new double[conv_dist_.size()];
+  std::adjacent_difference(conv_dist_.begin(), conv_dist_.end(), vel,
+                           [d_t](const double& first, const double& second) {
+                             return (first - second) / d_t;
+                           });
+
+  double total = 0;
+  for (auto i = 1; i < conv_dist_.size(); ++i) {
+    total += vel[i];
+  }
+  delete[] vel;
+  velocity_ = total / double(conv_dist_.size() - 1);
+  ROS_WARN_STREAM("velocity is : " << total);
+}
+
+double Sensor::getVelocity() { return velocity_; }

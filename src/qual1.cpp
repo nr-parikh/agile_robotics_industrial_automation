@@ -97,7 +97,7 @@ void endCompetition(ros::NodeHandle &node) {
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "ariac_example_node");
+  ros::init(argc, argv, "ariac_node");
 
   ros::NodeHandle node;
   // Sensor camera_;

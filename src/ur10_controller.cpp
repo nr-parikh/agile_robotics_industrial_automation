@@ -35,8 +35,8 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
   robot_move_group_.setPlanningTime(100);
   robot_move_group_.setNumPlanningAttempts(10);
   robot_move_group_.setPlannerId("RRTConnectkConfigDefault");
-  // robot_move_group_.setMaxVelocityScalingFactor(0.9);
-  // robot_move_group_.setMaxAccelerationScalingFactor(0.9);
+  robot_move_group_.setMaxVelocityScalingFactor(0.9);
+  robot_move_group_.setMaxAccelerationScalingFactor(0.9);
   // robot_move_group_.setEndEffector("moveit_ee");
   robot_move_group_.allowReplanning(true);
   home_joint_pose_ = {0.0, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
@@ -48,6 +48,18 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
 
   gripper_subscriber_ = gripper_nh_.subscribe(
       "/ariac/gripper/state", 10, &UR10Controller::gripperCallback, this);
+  joint_subscriber_ = ur10_nh_.subscribe("/ariac/arm/state", 10,
+                                         &UR10Controller::jointCallback2, this);
+  joint_publisher_ = ur10_nh_.advertise<trajectory_msgs::JointTrajectory>(
+      "/ariac/arm/command", 10);
+  quality1_subscriber_ =
+      ur10_nh_.subscribe("/ariac/quality_control_sensor_1", 10,
+                         &UR10Controller::quality1Callback, this);
+  quality2_subscriber_ =
+      ur10_nh_.subscribe("/ariac/quality_control_sensor_2", 10,
+                         &UR10Controller::quality2Callback, this);
+  arm_state_subscriber_ = ur10_nh_.subscribe(
+      "/ariac/joint_states", 10, &UR10Controller::jointCallback1, this);
 
   robot_tf_listener_.waitForTransform("linear_arm_actuator", "ee_link",
                                       ros::Time(0), ros::Duration(10));
@@ -94,18 +106,33 @@ UR10Controller::UR10Controller() : robot_move_group_("manipulator") {
       "/ariac/gripper/control");
   counter_ = 0;
   drop_flag_ = false;
-
-  joint_subscriber_ = ur10_nh_.subscribe("/ariac/arm/state", 10,
-                                         &UR10Controller::jointCallback, this);
-  joint_publisher_ = ur10_nh_.advertise<trajectory_msgs::JointTrajectory>(
-      "/ariac/arm/command", 10);
 }
 
 UR10Controller::~UR10Controller() {}
 
-void UR10Controller::jointCallback(
+void UR10Controller::jointCallback1(
+    const sensor_msgs::JointState::ConstPtr& joint) {
+  joint_state_ = *joint;
+}
+
+void UR10Controller::jointCallback2(
     const control_msgs::JointTrajectoryControllerState::ConstPtr& joint_msg) {
   curr_joint_states_ = *joint_msg;
+}
+
+void UR10Controller::gripperCallback(
+    const osrf_gear::VacuumGripperState::ConstPtr& grip) {
+  gripper_state_ = grip->attached;
+}
+
+void UR10Controller::quality1Callback(
+    const osrf_gear::LogicalCameraImage::ConstPtr& quality1_) {
+  quality_1 = *quality1_;
+}
+
+void UR10Controller::quality2Callback(
+    const osrf_gear::LogicalCameraImage::ConstPtr& quality2_) {
+  quality_2 = *quality2_;
 }
 
 bool UR10Controller::planner() {
@@ -129,21 +156,6 @@ void UR10Controller::execute() {
     robot_move_group_.move();
     ros::Duration(0.5).sleep();
   }
-}
-
-void UR10Controller::goToTarget(const geometry_msgs::Pose& pose) {
-  target_pose_.orientation = fixed_orientation_;
-  target_pose_.position = pose.position;
-  ros::AsyncSpinner spinner(4);
-  // target_pose_.position.z += 0.025;
-  robot_move_group_.setPoseTarget(target_pose_);
-  // this->execute();
-  spinner.start();
-  if (this->planner()) {
-    robot_move_group_.move();
-    ros::Duration(0.5).sleep();
-  }
-  ROS_INFO_STREAM("Point reached...");
 }
 
 void UR10Controller::goToTarget(
@@ -195,29 +207,55 @@ void UR10Controller::goToTarget(
                                                         traj, true);
     robot_planner_.trajectory_ = traj;
     robot_move_group_.execute(robot_planner_);
-    ros::Duration(2.0).sleep();
+    ros::Duration(1.5).sleep();
   }
 }
 
-void UR10Controller::sendRobot(std::vector<double> pose) {
-  // ros::Duration(2.0).sleep();
-  robot_move_group_.setJointValueTarget(pose);
-  // this->execute();
+void UR10Controller::goToTarget(const geometry_msgs::Pose& pose) {
+  target_pose_.orientation = fixed_orientation_;
+  target_pose_.position = pose.position;
   ros::AsyncSpinner spinner(4);
+  // target_pose_.position.z += 0.025;
+  robot_move_group_.setPoseTarget(target_pose_);
+  // this->execute();
   spinner.start();
   if (this->planner()) {
     robot_move_group_.move();
     ros::Duration(0.5).sleep();
   }
+  ROS_INFO_STREAM("Point reached...");
+}
 
+void UR10Controller::sendRobot(std::vector<double> pose) {
   // ros::Duration(2.0).sleep();
+  // robot_move_group_.setJointValueTarget(pose);
+  // // this->execute();
+  // ros::AsyncSpinner spinner(4);
+  // spinner.start();
+  // if (this->planner()) {
+  //   robot_move_group_.move();
+  //   ros::Duration(0.5).sleep();
+  // }
+  // ros::Duration(2.0).sleep();
+  trajectory_msgs::JointTrajectory target;
+  target.header.stamp = ros::Time::now();
+  target.joint_names = curr_joint_states_.joint_names;
+  // target.joint_names.pop_back();
+  target.points.resize(1);
+  target.points[0].positions.resize(target.joint_names.size());
+  for (int i = 0; i < target.joint_names.size(); ++i) {
+    // ROS_INFO_STREAM("tar: " << tar[i]);
+    target.points[0].positions[i] = pose[i];
+  }
+  target.points[0].time_from_start = ros::Duration(1.0);
+  joint_publisher_.publish(target);
+  ros::Duration(1.0).sleep();
 }
 
 void UR10Controller::gripperToggle(const bool& state) {
   gripper_service_.request.enable = state;
   gripper_client_.call(gripper_service_);
   ros::Duration(0.5).sleep();
-  // if (gripper_client_.call(gripper_service_)) {
   if (gripper_service_.response.success) {
     ROS_INFO_STREAM("Gripper activated!");
   } else {
@@ -225,58 +263,121 @@ void UR10Controller::gripperToggle(const bool& state) {
   }
 }
 
-void UR10Controller::gripperCallback(
-    const osrf_gear::VacuumGripperState::ConstPtr& grip) {
-  gripper_state_ = grip->attached;
-  // if (drop_flag_ && !gripper_state_) {
-  //   robot_move_group_.stop();
-  // }
-}
-
 bool UR10Controller::dropPart(geometry_msgs::Pose part_pose) {
   drop_flag_ = true;
+  auto temp_pose = part_pose;
+  auto temp_pose2 = part_pose;
 
   ros::spinOnce();
+  ros::Duration(0.1).sleep();
+
   ROS_INFO_STREAM("Dropping on AGV...");
+  bool result = gripper_state_;
 
   if (gripper_state_) {
-    auto temp_pose = part_pose;
-    temp_pose.position.z += 0.5;
-    this->goToTarget({temp_pose, part_pose});
-    ros::Duration(1).sleep();
-    ros::spinOnce();
+    // Turning Right or Left After Picking Up in Joint Angle
+    auto angle_pos_ = joint_state_.position;
 
-    // if (!gripper_state_){
-    //         ROS_INFO_STREAM("Fail Check drop part");
-    //       this->gripperToggle(true);
-    //         ros::spinOnce();
-    //       return gripper_state_;
-    //     }
-    ROS_INFO_STREAM("Actuating the gripper...");
-    this->gripperToggle(false);
+    if (part_pose.position.y > 0 && angle_pos_[1] > 0)
+      angle_pos_ = {angle_pos_[1], angle_pos_[3] + 3.14 + 1.57,
+                    -1.1,          1.9,
+                    angle_pos_[4], angle_pos_[5],
+                    angle_pos_[6]};
+    else if (part_pose.position.y > 0 && angle_pos_[1] < 0)
+      angle_pos_ = {angle_pos_[1], angle_pos_[3] - 1.57, -1.1,         1.9,
+                    angle_pos_[4], angle_pos_[5],        angle_pos_[6]};
+    else if (part_pose.position.y < 0 && angle_pos_[1] > 0)
+      angle_pos_ = {angle_pos_[1], angle_pos_[3] + 1.57, -1.1,         1.9,
+                    angle_pos_[4], angle_pos_[5],        angle_pos_[6]};
+    else if (part_pose.position.y < 0 && angle_pos_[1] < 0)
+      angle_pos_ = {angle_pos_[1], angle_pos_[3] - 3.14 - 1.57,
+                    -1.1,          1.9,
+                    angle_pos_[4], angle_pos_[5],
+                    angle_pos_[6]};
 
-    ros::spinOnce();
+    sendRobot(angle_pos_);
+
+    if (part_pose.position.y > 0)
+      angle_pos_ = {2.2,           1.7,           angle_pos_[2], angle_pos_[3],
+                    angle_pos_[4], angle_pos_[5], angle_pos_[6]};
+    else
+      angle_pos_ = {-2.2,          4.5,           angle_pos_[2], angle_pos_[3],
+                    angle_pos_[4], angle_pos_[5], angle_pos_[6]};
+
+    sendRobot(angle_pos_);
+
+    bool flg = false;
+
     if (!gripper_state_) {
+      goto label;
+    }
+
+    // For Quality CHeck
+
+    temp_pose.position.z += 0.3;
+    this->goToTarget({temp_pose});
+
+    ros::spinOnce();
+    ros::Duration(0.1).sleep();
+
+    if (!gripper_state_) {
+      flg = true;
+      goto label;
+    }
+
+    temp_pose2.position.z += 0.01;
+    this->goToTarget({temp_pose2, part_pose});
+
+  label:
+    ros::spinOnce();
+    ros::Duration(0.1).sleep();
+
+    // Writing code for Quality Sensor
+    ROS_WARN_STREAM("Output of Quality 1" << quality_1);
+    ROS_WARN_STREAM("Output of Quality 2" << quality_2);
+
+    ros::Duration(0.1).sleep();
+
+    if (!quality_1.models.empty() || !quality_2.models.empty() || flg) {
+      this->goToTarget({temp_pose});
       std::vector<double> drop_pose_;
       if (part_pose.position.y > 0)
         drop_pose_ = {0.5, 1.7, -1.1, 1.9, 3.9, 4.7, 0};
       else
         drop_pose_ = {-0.5, 4.5, -1.1, 1.9, 3.9, 4.7, 0};
       sendRobot(drop_pose_);
-      // ROS_INFO_STREAM("Going to home...");
-      // this->goToTarget({temp_pose, home_cart_pose_});
-      // ros::Duration(3.0).sleep();
+      this->gripperToggle(false);
+
+      ROS_INFO_STREAM("End Of DROP Part with faulty part detected");
+      result = true;
+    } else {
+      ROS_INFO_STREAM("Actuating the gripper in Drop Part");
+      this->gripperToggle(false);
+
+      ros::spinOnce();
+      if (!gripper_state_) {
+        std::vector<double> drop_pose_;
+        if (part_pose.position.y > 0)
+          drop_pose_ = {0.5, 1.7, -1.1, 1.9, 3.9, 4.7, 0};
+        else
+          drop_pose_ = {-0.5, 4.5, -1.1, 1.9, 3.9, 4.7, 0};
+        sendRobot(drop_pose_);
+        ros::spinOnce();
+        ros::Duration(0.1).sleep();
+        result = false;
+      }
     }
   }
 
-  drop_flag_ = false;
-  return gripper_state_;
+  return result;
 }
 
 bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
+  ROS_WARN_STREAM("In Pick Part Function");
   // gripper_state = false;
   // pick = true;
   // sendRobotHome();
+  // auto f = flipPart(part_pose);
   auto a = part_pose.position.y;
   std::vector<double> robot_pose_ = {a, 3.1, -1.1, 1.9, 3.9, 4.7, 0};
   sendRobot(robot_pose_);
@@ -284,36 +385,31 @@ bool UR10Controller::pickPart(geometry_msgs::Pose& part_pose) {
   ROS_INFO_STREAM("fixed_orientation_"
                   << fixed_orientation_.x << fixed_orientation_.y
                   << fixed_orientation_.z << fixed_orientation_.w);
-  part_pose.orientation = fixed_orientation_;
-  ROS_WARN_STREAM("Picking the part...");
 
   ROS_INFO_STREAM("Moving to part...");
-  part_pose.position.z = part_pose.position.z + offset_;
+  // part_pose.position.z = part_pose.position.z + offset_;
   auto temp_pose_1 = part_pose;
-  temp_pose_1.position.z += 0.35;
+  temp_pose_1.position.z += 0.35;  // changed from 0.35
   // this->goToTarget({part_pose});
-  // this->goToTarget({temp_pose_1, part_pose});
+  this->goToTarget({part_pose});
 
-  this->goToTarget(part_pose);
-  ROS_INFO_STREAM("Actuating the gripper..." << part_pose.position.z);
+  // this->goToTarget(part_pose);
+  ROS_INFO_STREAM("Actuating the gripper in Pick Part" << part_pose.position.z);
   this->gripperToggle(true);
   ros::spinOnce();
+  ros::Duration(0.5).sleep();
+
   while (!gripper_state_) {
-    part_pose.position.z -= 0.01;
+    part_pose.position.z -= 0.008;  // changed from 0.01
     this->goToTarget({temp_pose_1, part_pose});
-    ROS_INFO_STREAM("Actuating the gripper...");
+    ROS_INFO_STREAM("Actuating the gripper in pick part");
     this->gripperToggle(true);
     ros::spinOnce();
+    ros::Duration(0.1).sleep();
   }
-  // this->gripper_state_check(part_pose);
 
-  // this->gripper_state_check(part_pose);
-  // pick = false;
-  // auto temp_pose_2 = agv_position_;
-  // temp_pose_2.position.z += 0.35;
   ROS_INFO_STREAM("Going to waypoint...");
-  this->goToTarget(temp_pose_1);
-  // this->goToTarget({temp_pose_2});
+  this->goToTarget({temp_pose_1});
   return gripper_state_;
 }
 
@@ -339,24 +435,49 @@ void UR10Controller::publishJoints(const std::vector<double>& tar) {
 }
 
 bool UR10Controller::flipPart(geometry_msgs::Pose& part_pose) {
+  ROS_WARN_STREAM("Start of FLip Part");
+
   // this->pickPart(part_pose);
+  auto temp = part_pose;
+  tf::Quaternion q = {temp.orientation.x, temp.orientation.y,
+                      temp.orientation.z, temp.orientation.w};
+  tf::Matrix3x3 m;
+  double roll, pitch, yaw;
+  m.setRotation(q);
+  m.getRPY(roll, pitch, yaw);
+
   ros::spinOnce();
-  auto waypoint = curr_joint_states_.actual.positions;
-  waypoint[1] = 1.5960846338517403;
-  this->publishJoints(waypoint);
+  ros::Duration(0.1).sleep();
+
+  auto angle_pos_ = joint_state_.position;
+  angle_pos_ = {angle_pos_[1], angle_pos_[3], angle_pos_[2], angle_pos_[0],
+                angle_pos_[4], 1.5707,        angle_pos_[6]};
+
+  sendRobot(angle_pos_);
+
+  ROS_INFO_STREAM("reaching temp 1");
+  ros::Duration(1.0).sleep();
+  this->gripperToggle(false);
+
+  angle_pos_ = {angle_pos_[0], angle_pos_[1], angle_pos_[2], angle_pos_[3],
+                angle_pos_[4], -1.5707,       angle_pos_[6]};
+
+  sendRobot(angle_pos_);
+
+  this->gripperToggle(true);
+  ros::Duration(1.0).sleep();
   ros::spinOnce();
-  waypoint = curr_joint_states_.actual.positions;
-  // waypoint[]
+  return gripper_state_;
 }
 
 bool UR10Controller::goToConveyor(const geometry_msgs::Pose& part_pose) {
   ros::Time curr_time = ros::Time::now();
   ros::spinOnce();
   auto conv_pose = curr_joint_states_.actual.positions;
-  conv_pose[1] = 0.5;
-  conv_pose[0] = part_pose.position.y;
+  // conv_pose[1] = 0.5;
+  // conv_pose[0] = part_pose.position.y;
 
-  this->sendRobot(conv_pose);
+  this->sendRobot(conv_joint_pose_);
   this->gripperToggle(true);
 
   auto model = robot_move_group_.getRobotModel();
@@ -380,7 +501,7 @@ bool UR10Controller::goToConveyor(const geometry_msgs::Pose& part_pose) {
     curr_time = ros::Time::now();
     time_diff = curr_time.toSec() - prev_time.toSec();
 
-    target_pose_.position.y += (0.2 * time_diff);
+    // target_pose_.position.y += (conv_camera_.getVelocity() * time_diff);
     ros::spinOnce();
     conv_pose = curr_joint_states_.actual.positions;
     kinematic_state->setJointGroupPositions(group, conv_pose);

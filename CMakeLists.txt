@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   tf
   geometry_msgs
+  control_msgs
 )
 
 catkin_package()

@@ -36,57 +36,42 @@
 #include <map>
 #include "agile_robotics_industrial_automation/sensor_2b.hpp"
 
-// class Broadcaster {
-//  public:
-//   void poseCallback(const geometry_msgs::Pose& msg);
-
-//  private:
-//   tf::Transform transform_;
-//   tf::Quaternion qaut_;
-//   static tf::TransformBroadcaster br_;
-// };
-
 int main(int argc, char** argv) {
   ros::init(argc, argv, "pose_node");
   ros::NodeHandle node;
-  // ros::Subscriber sub =
-  //     node.subscribe(turtle_name + "/pose", 10, &poseCallback);
 
   ros::Publisher pub = node.advertise<std_msgs::String>("/conveyor/poses", 100);
-  ros::Rate loop_rate(1);
+  ros::Rate loop_rate(10);
 
   tf::Transform transform;
   tf::Quaternion quat;
   Sensor camera;
   static tf::TransformBroadcaster br;
-  std::map<std::string, geometry_msgs::Pose> temp_map;
+  // std::map<std::string, geometry_msgs::Pose> temp_map;
 
   while (ros::ok()) {
     ros::spinOnce();
+    ros::Duration(0.1).sleep();
     auto loop_map = camera.getMap();
+    auto vel = camera.getVelocity();
+    // ROS_WARN_STREAM("velocity received: " << vel);
+    // ROS_WARN_STREAM("TEMP_MAP: " << temp_map.size());
+    // ROS_WARN_STREAM("LOOP_MAP: " << loop_map.size());
 
-    ROS_WARN_STREAM("TEMP_MAP: " << temp_map.size());
-    ROS_WARN_STREAM("LOOP_MAP: " << loop_map.size());
-
-    for (auto& j : loop_map) {
-      if (temp_map.find(j.first) == temp_map.end()) {
-        temp_map[j.first] = j.second;
+    if (loop_map.size()) {
+      for (auto& i : loop_map) {
+        for (auto& j : i.second) {
+          transform.setOrigin(
+              tf::Vector3(j._pose.position.x, j._pose.position.y, 0.0));
+          quat.setRPY(0, 0, 0);
+          transform.setRotation(quat);
+          br.sendTransform(tf::StampedTransform(transform, ros::Time::now(),
+                                                "world", j._frame));
+          j._pose.position.y += vel * 0.1;
+          ROS_INFO_STREAM("positions: " << j._pose.position.y);
+        }
       }
     }
-
-    if (temp_map.size()) {
-      ROS_INFO_STREAM("Inside IF...");
-      for (auto& i : temp_map) {
-        transform.setOrigin(
-            tf::Vector3(i.second.position.x, i.second.position.y, 0.0));
-        quat.setRPY(0, 0, 0);
-        transform.setRotation(quat);
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(),
-                                              "world", i.first));
-        i.second.position.y -= 0.2;
-      }
-    }
-
     loop_rate.sleep();
   }
 

@@ -31,22 +31,27 @@
 
 #pragma once
 
-#include <control_msgs/JointTrajectoryControllerState.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <ros/ros.h>
 #include <stdarg.h>
-#include <tf/transform_listener.h>
-#include <trajectory_msgs/JointTrajectoryPoint.h>
 #include <initializer_list>
 #include <iostream>
 #include <string>
 
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <ros/ros.h>
+#include <tf/transform_listener.h>
+
+#include <control_msgs/JointTrajectoryControllerState.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <trajectory_msgs/JointTrajectoryPoint.h>
+
+#include <osrf_gear/LogicalCameraImage.h>
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
+
+#include "agile_robotics_industrial_automation/sensor.hpp"
 
 class UR10Controller {
  public:
@@ -60,8 +65,13 @@ class UR10Controller {
   bool dropPart(geometry_msgs::Pose pose);
   void gripperToggle(const bool& state);
   void gripperCallback(const osrf_gear::VacuumGripperState::ConstPtr& grip);
-  void jointCallback(
+  void jointCallback1(const sensor_msgs::JointState::ConstPtr& joint);
+  void jointCallback2(
       const control_msgs::JointTrajectoryControllerState::ConstPtr& joint_msg);
+  void quality1Callback(
+      const osrf_gear::LogicalCameraImage::ConstPtr& quality1_);
+  void quality2Callback(
+      const osrf_gear::LogicalCameraImage::ConstPtr& quality2_);
   void gripper_state_check(geometry_msgs::Pose pose);
   bool pickPart(geometry_msgs::Pose& part_pose);
   bool flipPart(geometry_msgs::Pose& part_pose);
@@ -76,6 +86,9 @@ class UR10Controller {
   ros::Subscriber camera_1_subscriber_;
   ros::Subscriber joint_subscriber_;
   ros::Publisher joint_publisher_;
+  ros::Subscriber arm_state_subscriber_;
+  ros::Subscriber quality1_subscriber_;
+  ros::Subscriber quality2_subscriber_;
 
   tf::TransformListener robot_tf_listener_;
   tf::StampedTransform robot_tf_transform_;
@@ -94,6 +107,7 @@ class UR10Controller {
   geometry_msgs::Pose agv_position_;
   control_msgs::JointTrajectoryControllerState curr_joint_states_;
   geometry_msgs::PoseStamped conv_pose_;
+  sensor_msgs::JointState joint_state_;
 
   std::string object;
   bool plan_success_;
@@ -103,4 +117,7 @@ class UR10Controller {
   tf::Quaternion q;
   int counter_;
   bool gripper_state_, drop_flag_;
+  osrf_gear::LogicalCameraImage quality_1, quality_2;
+
+  Sensor conv_camera_;
 };

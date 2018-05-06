@@ -34,7 +34,7 @@
 #include <list>
 #include <map>
 #include <string>
-// #include <pair>
+#include <vector>
 
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -45,10 +45,16 @@
 
 #include <osrf_gear/LogicalCameraImage.h>
 
-// typedef std::map<std::string, std::pair<int, geometry_msgs::Pose> conv_type; 
+// typedef std::map<std::string, std::pair<int, geometry_msgs::Pose> conv_type;
 
 class Sensor {
  public:
+  struct ConveyorPart {
+    std::string _frame;
+    geometry_msgs::Pose _pose;
+    size_t _count;
+  };
+
   Sensor();
   ~Sensor();
   void camera1Callback(
@@ -61,8 +67,13 @@ class Sensor {
   void scanParts(int cam_number);
   void convertPose(const geometry_msgs::PoseStamped& in);
   geometry_msgs::Pose getConveyorPose();
-  std::map<std::string, geometry_msgs::Pose> getMap();
+  std::map<std::string, std::vector<ConveyorPart>> getMap();
+  bool checkPart(const geometry_msgs::Pose& point1,
+                 const geometry_msgs::Pose& point2);
 
+  void findVelocity(const double& d_t);
+  double getVelocity();
+  
  private:
   ros::NodeHandle sensor_nh_;
   ros::Subscriber camera_1_subscriber_;
@@ -82,5 +93,9 @@ class Sensor {
 
   geometry_msgs::PoseStamped conv_pose_;
   std_msgs::Header cam_frame_;
-  std::map<std::string, geometry_msgs::Pose> conveyor_parts_;
+  std::map<std::string, std::vector<ConveyorPart>> conveyor_parts_;
+
+  ros::Time curr_time_, prev_time_;
+  std::vector<double> conv_dist_;
+  double velocity_ = 1.0;
 };
