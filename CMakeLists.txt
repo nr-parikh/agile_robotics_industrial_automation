@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   tf
   geometry_msgs
+  control_msgs
 )
 
 catkin_package()
@@ -29,10 +30,17 @@ include
 )
 
 add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor.cpp src/order_manager.cpp)
+# add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor_2b.cpp src/order_manager.cpp)
+# add_executable(qual1_node src/qual1.cpp src/ur10_controller.cpp src/sensor_2b.cpp src/order_manager_2b.cpp)
+add_executable(pose_node src/pose_broadcaster.cpp src/sensor.cpp)
 
 add_dependencies(qual1_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(pose_node ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(qual1_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(pose_node
   ${catkin_LIBRARIES}
 )
 
@@ -48,6 +56,6 @@ install(TARGETS qual1_node
 )
 
 install(FILES
- config/team_config_1.yaml
+ config/team_config_2b.yaml
  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
