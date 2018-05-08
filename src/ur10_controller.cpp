@@ -645,12 +645,12 @@ bool UR10Controller::goToConveyor(const geometry_msgs::Pose& part_pose, std::str
   // if (conv_camera_.checkPart(part_pose, temp)){
 
     while(!gripper_state_){
-      if(type=="gear_part")
-        {sendRobot(piston_pose_,0.25);}
-      else{
-      sendRobot(disk_pose_,0.25);
+      // if(type=="gear_part")
+        // {sendRobot(piston_pose_,0.25);}
+      // else{
+      sendRobot(gasket_pose_,0.25);
       sendRobot(piston_pose_,0.25);
-      }
+      // }
       ros::spinOnce();
     // ros::Duration(0.1).sleep();
       ROS_INFO_STREAM("1  "<< gripper_state_);

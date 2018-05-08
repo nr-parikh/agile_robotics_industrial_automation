@@ -61,7 +61,7 @@ void OrderManager::convCallback(
 
 void OrderManager::dummyCallback(const std_msgs::String& dummy_msg) {
   // ROS_ERROR_STREAM("inside callback...");
-  if (ros::Time::now().toSec() - prev_time_.toSec() > 300) {
+  if (ros::Time::now().toSec() - prev_time_.toSec() > 200) {
     ROS_WARN_STREAM("Kit name 1: " << error_kit_list_.first._kit_name);
     ROS_WARN_STREAM("Kit name 2: " << error_kit_list_.second._kit_name);
     this->submitAGV(error_kit_list_.first._agv_num,
@@ -74,9 +74,12 @@ void OrderManager::dummyCallback(const std_msgs::String& dummy_msg) {
 std::string OrderManager::getPartType(std::string object) {
   // auto itr = parts_on_conv_.models.find(object);
   std::string part;
+  int count1,count2;  
 
-  if (object == "piston_rod_part" || "gasket_part") {
-    while (!found_) {
+  if (object == "piston_rod_part" || "gasket_part" || "gear_part") {
+    int count1 = 0;
+    while (!found_|| count1 < 5) {
+      count1++;
       found_ = false;
       ros::spinOnce();
       // ROS_INFO_STREAM("parts_on_conv_ size: " <<
@@ -114,7 +117,9 @@ std::string OrderManager::getPartType(std::string object) {
 
   // priotizing bin over conveyor
   else {
-    while (!found_) {
+    int count2 = 0;
+    while (!found_ || count2 < 5) {
+      count2++;
       found_ = false;
       if (scanned_objects_[object].size()) {
         part = scanned_objects_[object].back();
@@ -146,6 +151,10 @@ std::string OrderManager::getPartType(std::string object) {
     }
   }
   found_ = false;
+  // if (count1 >= 4 || count2 >= 4){
+  //   error = "invalid";  
+  // }
+  
   return part;
 }
 
@@ -294,6 +303,7 @@ void OrderManager::executeOrder() {
   auto kits1_ = order_.kits;
 
   int finish = 0, i = 0;
+  
   for (auto kit : order1_.kits) {
     for (auto& object : kit.objects) {
       error_kit_list_.first._agv_num = 2;
@@ -352,6 +362,40 @@ void OrderManager::executeOrder() {
     ROS_WARN_STREAM("Submitting AGV 2");
     i += 1;
   }
+  	  ros::spinOnce();
+      ros::Duration(0.1).sleep();
+      kits1_ = order_.kits;
+
+       if (kits1_[i].kit_type == "order_1_kit_0" ) {
+        ROS_WARN_STREAM("HIGH PRIORITY ORDER");
+
+        for (auto kitnew : order_.kits) {
+          ROS_INFO_STREAM("Kit Type in High Priority" << kitnew.kit_type);
+          error_kit_list_.first._agv_num = 1;
+          error_kit_list_.first._kit_name = kitnew.kit_type;
+          for (auto& objectnew : kitnew.objects) {
+            object_prop.first = objectnew.type;
+            object_prop.second = objectnew.pose;
+            int agvnum = 1;
+            failed = pickAndPlace(object_prop, agvnum);
+            while (failed) {
+              ROS_WARN_STREAM(
+                  "Adding the Failed Parts Back into the list of Higher "
+                  "Priority Order");
+
+              ROS_INFO_STREAM("Adding part : " << object_prop.first);
+
+              failed = pickAndPlace(object_prop, 1);
+            }
+          }
+          ROS_INFO_STREAM("Submitting Kit Type" << kitnew.kit_type);
+          submitAGV(1, kitnew.kit_type);
+          ROS_WARN_STREAM("Submitting AGV 1");
+          int finish = 1;
+        }
+      }	
+
+
 }
 
 void OrderManager::submitAGV(int num, std::string name) {

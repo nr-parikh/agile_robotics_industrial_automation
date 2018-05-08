@@ -86,4 +86,5 @@ class OrderManager {
 
   ros::Time prev_time_;
   std::pair<errorSubmitAGV, errorSubmitAGV> error_kit_list_;  
+  std::string error = "okay";
 };
